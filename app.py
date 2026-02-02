@@ -11,37 +11,40 @@ st.set_page_config(
 )
 
 # =============================
-# CSS (Netflix 카드 스타일)
+# CSS (Netflix 스타일 카드)
 # =============================
 st.markdown(
     """
     <style>
+    body {
+        background-color: #000000;
+    }
     .movie-card {
         background-color: #141414;
-        padding: 15px;
+        padding: 14px;
         border-radius: 12px;
-        height: 100%;
         color: white;
+        height: 100%;
     }
     .movie-title {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 700;
-        margin-bottom: 6px;
+        margin-top: 8px;
     }
     .movie-rating {
         color: #f5c518;
         font-weight: 600;
-        margin-bottom: 8px;
+        margin: 6px 0;
     }
     .movie-overview {
-        font-size: 14px;
-        line-height: 1.4;
+        font-size: 13px;
         color: #dddddd;
+        line-height: 1.4;
     }
     .movie-reason {
-        font-size: 13px;
+        font-size: 12px;
         margin-top: 10px;
-        color: #bbbbbb;
+        color: #aaaaaa;
     }
     </style>
     """,
@@ -62,6 +65,13 @@ GENRES = {
 
 POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
 
+AGE_CERT_MAP = {
+    "전체 이용가": "ALL",
+    "12세 이상": "12",
+    "15세 이상": "15",
+    "19세 이상": "19"
+}
+
 
 # =============================
 # 성향 분석
@@ -69,16 +79,16 @@ POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
 def analyze_answers(answers):
     scores = {g: 0 for g in GENRES}
 
-    mapping = [
-        ("집에서 휴식", {"드라마": 2, "로맨스": 1}),
-        ("친구와 놀기", {"코미디": 2}),
-        ("새로운 곳 탐험", {"액션": 2, "판타지": 1}),
-        ("혼자 취미생활", {"SF": 2}),
-    ]
-    for key, pts in mapping:
-        if answers[0] == key:
-            for g, v in pts.items():
-                scores[g] += v
+    if answers[0] == "집에서 휴식":
+        scores["드라마"] += 2
+        scores["로맨스"] += 1
+    elif answers[0] == "친구와 놀기":
+        scores["코미디"] += 2
+    elif answers[0] == "새로운 곳 탐험":
+        scores["액션"] += 2
+        scores["판타지"] += 1
+    elif answers[0] == "혼자 취미생활":
+        scores["SF"] += 2
 
     if answers[1] == "수다 떨기":
         scores["코미디"] += 2
@@ -113,9 +123,9 @@ def analyze_answers(answers):
 
 
 # =============================
-# TMDB API
+# TMDB API 호출
 # =============================
-def fetch_movies(api_key, genre_id, min_rating):
+def fetch_movies(api_key, genre_id, min_rating, min_age_cert):
     url = "https://api.themoviedb.org/3/discover/movie"
     params = {
         "api_key": api_key.strip(),
@@ -123,29 +133,34 @@ def fetch_movies(api_key, genre_id, min_rating):
         "language": "ko-KR",
         "sort_by": "popularity.desc",
         "vote_average.gte": min_rating,
+        "certification_country": "KR",
+        "certification.gte": min_age_cert,
         "page": 1
     }
 
-    r = requests.get(url, params=params, timeout=10)
-    if r.status_code != 200:
+    response = requests.get(url, params=params, timeout=10)
+
+    if response.status_code != 200:
         st.error("TMDB API 요청 실패")
-        st.json(r.json())
+        st.json(response.json())
         return []
 
-    data = r.json()
-    return data.get("results", [])[:7]
+    data = response.json()
+    return data.get("results", [])[:8]
 
 
 # =============================
 # UI
 # =============================
 st.title("🎬 나와 어울리는 영화는?")
-st.write("당신의 성향을 분석해 **지금 보면 딱 좋은 영화**를 추천해드려요.")
+st.write("당신의 성향과 조건에 맞는 영화를 골라드려요 🎥")
 
 with st.sidebar:
-    st.header("🔑 TMDB 설정")
+    st.header("🎛 추천 조건 설정")
     api_key = st.text_input("TMDB API Key", type="password")
     min_rating = st.slider("⭐ 최소 평점", 0.0, 9.0, 6.5, 0.5)
+    min_age_label = st.selectbox("🎞 최소 관람 연령", list(AGE_CERT_MAP.keys()))
+    min_age_cert = AGE_CERT_MAP[min_age_label]
 
 st.divider()
 
@@ -172,13 +187,14 @@ if st.button("결과 보기", type="primary"):
 
     with st.spinner("분석 중..."):
         genre_name, genre_id = analyze_answers(questions)
-        movies = fetch_movies(api_key, genre_id, min_rating)
+        movies = fetch_movies(api_key, genre_id, min_rating, min_age_cert)
 
     st.subheader(f"🎯 추천 장르: {genre_name}")
     st.write(
         f"""
         당신은 **{genre_name} 장르**에서 만족도가 높을 가능성이 커요.  
-        감정선, 몰입도, 전개 속도 모두 당신의 선택 패턴과 잘 맞는 영화들이에요.
+        선택한 평점과 관람 연령 조건을 충족하면서도,  
+        몰입감과 완성도가 검증된 영화들로 추천했어요.
         """
     )
 
@@ -192,10 +208,12 @@ if st.button("결과 보기", type="primary"):
                     <img src="{POSTER_BASE_URL + movie['poster_path'] if movie.get('poster_path') else ''}" width="100%">
                     <div class="movie-title">{movie.get('title')}</div>
                     <div class="movie-rating">⭐ {movie.get('vote_average')}</div>
-                    <div class="movie-overview">{movie.get('overview', '줄거리 정보 없음')[:120]}...</div>
+                    <div class="movie-overview">
+                        {movie.get('overview', '줄거리 정보가 없습니다.')[:120]}...
+                    </div>
                     <div class="movie-reason">
-                        이 영화는 당신이 선호한 <b>{genre_name}</b> 감성과 잘 어울리며,  
-                        평점 조건을 충족한 작품이라 몰입해서 보기 좋아요.
+                        이 작품은 당신의 성향과 잘 맞는 <b>{genre_name}</b> 장르이며,  
+                        설정한 평점·연령 기준을 모두 충족해 부담 없이 즐길 수 있어요.
                     </div>
                 </div>
                 """,
