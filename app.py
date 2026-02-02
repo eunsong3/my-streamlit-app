@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from openai import OpenAI
 
 # =============================
 # 기본 설정
@@ -11,45 +12,60 @@ st.set_page_config(
 )
 
 # =============================
-# CSS (Netflix 스타일 카드)
+# Session State (찜 목록)
 # =============================
-st.markdown(
-    """
-    <style>
-    body {
-        background-color: #000000;
-    }
-    .movie-card {
-        background-color: #141414;
-        padding: 14px;
-        border-radius: 12px;
-        color: white;
-        height: 100%;
-    }
-    .movie-title {
-        font-size: 17px;
-        font-weight: 700;
-        margin-top: 8px;
-    }
-    .movie-rating {
-        color: #f5c518;
-        font-weight: 600;
-        margin: 6px 0;
-    }
-    .movie-overview {
-        font-size: 13px;
-        color: #dddddd;
-        line-height: 1.4;
-    }
-    .movie-reason {
-        font-size: 12px;
-        margin-top: 10px;
-        color: #aaaaaa;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+if "favorites" not in st.session_state:
+    st.session_state.favorites = []
+
+# =============================
+# CSS (Netflix 스타일)
+# =============================
+st.markdown("""
+<style>
+body {
+    background-color: #000000;
+}
+.netflix-title {
+    color: #E50914;
+    font-size: 42px;
+    font-weight: 900;
+}
+.movie-card {
+    background-color: #141414;
+    padding: 14px;
+    border-radius: 12px;
+    color: white;
+    transition: transform 0.2s ease;
+}
+.movie-card:hover {
+    transform: scale(1.03);
+}
+.movie-title {
+    font-size: 18px;
+    font-weight: 700;
+}
+.movie-rating {
+    color: #ffffff;
+    font-weight: 600;
+    margin: 4px 0;
+}
+.movie-overview {
+    font-size: 13px;
+    color: #cccccc;
+}
+.movie-reason {
+    font-size: 13px;
+    color: #f5f5f5;
+    margin-top: 8px;
+}
+.fav-btn {
+    background-color: #E50914;
+    color: white;
+    border-radius: 6px;
+    padding: 4px 10px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # =============================
 # 상수
@@ -72,7 +88,6 @@ AGE_CERT_MAP = {
     "19세 이상": "19"
 }
 
-
 # =============================
 # 성향 분석
 # =============================
@@ -86,136 +101,103 @@ def analyze_answers(answers):
         scores["코미디"] += 2
     elif answers[0] == "새로운 곳 탐험":
         scores["액션"] += 2
-        scores["판타지"] += 1
     elif answers[0] == "혼자 취미생활":
         scores["SF"] += 2
 
-    if answers[1] == "수다 떨기":
-        scores["코미디"] += 2
-        scores["로맨스"] += 1
-    elif answers[1] == "운동하기":
-        scores["액션"] += 2
-    elif answers[1] == "혼자 있기":
-        scores["드라마"] += 2
-
-    if answers[2] == "감동 스토리":
-        scores["드라마"] += 2
-        scores["로맨스"] += 1
-    elif answers[2] == "시각적 영상미":
-        scores["SF"] += 2
-        scores["판타지"] += 2
-    elif answers[2] == "웃는 재미":
+    if answers[2] == "웃는 재미":
         scores["코미디"] += 3
+    elif answers[2] == "감동 스토리":
+        scores["드라마"] += 2
 
-    if answers[3] == "액티비티":
-        scores["액션"] += 3
-    elif answers[3] == "힐링":
-        scores["로맨스"] += 2
-        scores["드라마"] += 1
-
-    if answers[4] == "분위기 메이커":
-        scores["코미디"] += 2
-    elif answers[4] == "주도하기":
-        scores["액션"] += 2
-
-    best_genre = max(scores, key=scores.get)
-    return best_genre, GENRES[best_genre]
-
+    return max(scores, key=scores.get), GENRES[max(scores, key=scores.get)]
 
 # =============================
-# TMDB API 호출
+# TMDB API
 # =============================
-def fetch_movies(api_key, genre_id, min_rating, min_age_cert):
+def fetch_movies(api_key, genre_id, min_rating, min_age):
     url = "https://api.themoviedb.org/3/discover/movie"
     params = {
-        "api_key": api_key.strip(),
+        "api_key": api_key,
         "with_genres": genre_id,
         "language": "ko-KR",
-        "sort_by": "popularity.desc",
         "vote_average.gte": min_rating,
         "certification_country": "KR",
-        "certification.gte": min_age_cert,
+        "certification.gte": min_age,
+        "sort_by": "popularity.desc",
         "page": 1
     }
+    return requests.get(url, params=params).json().get("results", [])[:8]
 
-    response = requests.get(url, params=params, timeout=10)
+# =============================
+# GPT 추천 이유
+# =============================
+def gpt_reason(client, answers, movie, genre):
+    prompt = f"""
+사용자 성향: {answers}
+영화 제목: {movie['title']}
+장르: {genre}
+줄거리: {movie.get('overview','')}
 
-    if response.status_code != 200:
-        st.error("TMDB API 요청 실패")
-        st.json(response.json())
-        return []
-
-    data = response.json()
-    return data.get("results", [])[:8]
-
+이 사용자가 왜 이 영화를 좋아할지 2~3문장으로 한국어로 설명해줘.
+"""
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return res.choices[0].message.content
 
 # =============================
 # UI
 # =============================
-st.title("🎬 나와 어울리는 영화는?")
-st.write("당신의 성향과 조건에 맞는 영화를 골라드려요 🎥")
+st.markdown("<div class='netflix-title'>🎬 나와 어울리는 영화는?</div>", unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("🎛 추천 조건 설정")
-    api_key = st.text_input("TMDB API Key", type="password")
+    st.header("🔑 API 설정")
+    tmdb_key = st.text_input("TMDB API Key", type="password")
+    openai_key = st.text_input("OpenAI API Key", type="password")
     min_rating = st.slider("⭐ 최소 평점", 0.0, 9.0, 6.5, 0.5)
-    min_age_label = st.selectbox("🎞 최소 관람 연령", list(AGE_CERT_MAP.keys()))
-    min_age_cert = AGE_CERT_MAP[min_age_label]
-
-st.divider()
+    min_age = AGE_CERT_MAP[st.selectbox("🎞 관람 연령", AGE_CERT_MAP.keys())]
 
 questions = [
-    st.radio("1. 주말에 가장 하고 싶은 것은?", ["집에서 휴식", "친구와 놀기", "새로운 곳 탐험", "혼자 취미생활"], index=None),
-    st.radio("2. 스트레스 받으면?", ["혼자 있기", "수다 떨기", "운동하기", "맛있는 거 먹기"], index=None),
-    st.radio("3. 영화에서 중요한 것은?", ["감동 스토리", "시각적 영상미", "깊은 메시지", "웃는 재미"], index=None),
-    st.radio("4. 여행 스타일?", ["계획적", "즉흥적", "액티비티", "힐링"], index=None),
-    st.radio("5. 친구 사이에서 나는?", ["듣는 역할", "주도하기", "분위기 메이커", "필요할 때 나타남"], index=None),
+    st.radio("주말에 가장 하고 싶은 것은?", ["집에서 휴식", "친구와 놀기", "새로운 곳 탐험", "혼자 취미생활"], index=None),
+    st.radio("영화에서 중요한 것은?", ["감동 스토리", "시각적 영상미", "깊은 메시지", "웃는 재미"], index=None),
 ]
 
-st.divider()
-
-# =============================
-# 결과
-# =============================
 if st.button("결과 보기", type="primary"):
-    if None in questions:
-        st.warning("모든 질문에 답해주세요!")
-        st.stop()
-    if not api_key:
-        st.error("TMDB API Key를 입력해주세요!")
+    if None in questions or not tmdb_key or not openai_key:
+        st.warning("모든 항목을 입력해주세요")
         st.stop()
 
-    with st.spinner("분석 중..."):
-        genre_name, genre_id = analyze_answers(questions)
-        movies = fetch_movies(api_key, genre_id, min_rating, min_age_cert)
+    genre_name, genre_id = analyze_answers(questions)
+    movies = fetch_movies(tmdb_key, genre_id, min_rating, min_age)
+
+    client = OpenAI(api_key=openai_key)
 
     st.subheader(f"🎯 추천 장르: {genre_name}")
-    st.write(
-        f"""
-        당신은 **{genre_name} 장르**에서 만족도가 높을 가능성이 커요.  
-        선택한 평점과 관람 연령 조건을 충족하면서도,  
-        몰입감과 완성도가 검증된 영화들로 추천했어요.
-        """
-    )
 
     cols = st.columns(4)
+    for i, movie in enumerate(movies):
+        with cols[i % 4]:
+            reason = gpt_reason(client, questions, movie, genre_name)
 
-    for idx, movie in enumerate(movies):
-        with cols[idx % 4]:
-            st.markdown(
-                f"""
-                <div class="movie-card">
-                    <img src="{POSTER_BASE_URL + movie['poster_path'] if movie.get('poster_path') else ''}" width="100%">
-                    <div class="movie-title">{movie.get('title')}</div>
-                    <div class="movie-rating">⭐ {movie.get('vote_average')}</div>
-                    <div class="movie-overview">
-                        {movie.get('overview', '줄거리 정보가 없습니다.')[:120]}...
-                    </div>
-                    <div class="movie-reason">
-                        이 작품은 당신의 성향과 잘 맞는 <b>{genre_name}</b> 장르이며,  
-                        설정한 평점·연령 기준을 모두 충족해 부담 없이 즐길 수 있어요.
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown(f"""
+            <div class="movie-card">
+                <img src="{POSTER_BASE_URL + movie['poster_path']}" width="100%">
+                <div class="movie-title">{movie['title']}</div>
+                <div class="movie-rating">⭐ {movie['vote_average']}</div>
+                <div class="movie-reason">{reason}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.button("❤️ 찜하기", key=movie["id"]):
+                if movie not in st.session_state.favorites:
+                    st.session_state.favorites.append(movie)
+
+# =============================
+# 찜 목록
+# =============================
+if st.session_state.favorites:
+    st.divider()
+    st.subheader("❤️ 내가 찜한 영화")
+    for fav in st.session_state.favorites:
+        st.write(f"🎬 {fav['title']}")
