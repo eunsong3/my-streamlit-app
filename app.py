@@ -1,3 +1,4 @@
+turn: (genre_name, genre_id, reason, scores)
 import streamlit as st
 import requests
 from typing import Dict, List, Tuple
@@ -213,4 +214,21 @@ if st.button("결과 보기", type="primary"):
     answers = {"q1": q1, "q2": q2, "q3": q3, "q4": q4, "q5": q5}
 
     if any(v is None for v in answers.values()):
-        st.warning("모든 질
+        st.warning("모든 질문에 답변해 주세요!")
+        st.stop()
+
+    if not api_key.strip():
+        st.error("사이드바에 TMDB API Key를 입력해 주세요!")
+        st.stop()
+
+    with st.spinner("분석 중..."):
+        genre_name, genre_id, user_reason, scores = analyze_answers(answers)
+
+        # Fetch movies
+        try:
+            results = fetch_popular_movies_by_genre(api_key.strip(), genre_id)
+        except requests.HTTPError as e:
+            st.error("TMDB 요청에 실패했어요. API Key가 올바른지 확인해 주세요.")
+            st.caption(f"오류: {e}")
+            st.stop()
+        
