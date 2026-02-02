@@ -1,15 +1,18 @@
 import streamlit as st
 import requests
 
+# =============================
+# 기본 설정
+# =============================
 st.set_page_config(
     page_title="🎬 나와 어울리는 영화는?",
     page_icon="🎬",
     layout="centered"
 )
 
-# -----------------------------
-# 상수 설정
-# -----------------------------
+# =============================
+# 상수
+# =============================
 GENRES = {
     "액션": 28,
     "코미디": 35,
@@ -22,11 +25,11 @@ GENRES = {
 POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
 
 
-# -----------------------------
-# 성향 분석 함수
-# -----------------------------
+# =============================
+# 성향 분석 로직
+# =============================
 def analyze_answers(answers):
-    scores = {genre: 0 for genre in GENRES}
+    scores = {genre: 0 for genre in GENRES.keys()}
 
     # Q1
     if answers[0] == "집에서 휴식":
@@ -90,31 +93,46 @@ def analyze_answers(answers):
     return best_genre, GENRES[best_genre]
 
 
-# -----------------------------
-# TMDB API 호출
-# -----------------------------
+# =============================
+# TMDB API 호출 (에러 안전)
+# =============================
 def fetch_movies(api_key, genre_id):
     url = "https://api.themoviedb.org/3/discover/movie"
     params = {
-        "api_key": api_key,
+        "api_key": api_key.strip(),
         "with_genres": genre_id,
         "language": "ko-KR",
         "sort_by": "popularity.desc",
         "page": 1
     }
-    response = requests.get(url)
-    return response.json()["results"][:5]
+
+    response = requests.get(url, params=params, timeout=10)
+
+    if response.status_code != 200:
+        st.error("TMDB API 요청 실패")
+        st.json(response.json())
+        return []
+
+    data = response.json()
+
+    if "results" not in data:
+        st.error("TMDB 응답에 results가 없습니다.")
+        st.json(data)
+        return []
+
+    return data["results"][:5]
 
 
-# -----------------------------
+# =============================
 # UI
-# -----------------------------
+# =============================
 st.title("🎬 나와 어울리는 영화는?")
 st.write("5가지 질문으로 당신의 성향에 딱 맞는 영화를 추천해드려요!")
 
 with st.sidebar:
     st.header("🔑 TMDB API Key")
     api_key = st.text_input("API Key 입력", type="password")
+    st.caption("TMDB v3 API Key를 입력하세요")
 
 st.divider()
 
@@ -150,34 +168,44 @@ q5 = st.radio(
 
 st.divider()
 
+# =============================
+# 결과 보기
+# =============================
 if st.button("결과 보기", type="primary"):
     answers = [q1, q2, q3, q4, q5]
 
     if None in answers:
         st.warning("모든 질문에 답해주세요!")
-    elif not api_key:
-        st.error("TMDB API Key를 입력해주세요!")
-    else:
-        with st.spinner("분석 중..."):
-            genre_name, genre_id = analyze_answers(answers)
-            movies = fetch_movies(api_key, genre_id)
+        st.stop()
 
-        st.subheader(f"🎯 추천 장르: {genre_name}")
-        st.write(f"당신의 성향을 분석한 결과 **{genre_name}** 장르가 가장 잘 어울려요!")
+    if not api_key:
+        st.error("TMDB API Key를 입력해주세요!")
+        st.stop()
+
+    with st.spinner("분석 중..."):
+        genre_name, genre_id = analyze_answers(answers)
+        movies = fetch_movies(api_key, genre_id)
+
+    if not movies:
+        st.warning("추천할 영화를 가져오지 못했어요 😢")
+        st.stop()
+
+    st.subheader(f"🎯 추천 장르: {genre_name}")
+    st.write(f"당신의 선택을 분석한 결과 **{genre_name}** 장르가 가장 잘 어울려요!")
+
+    st.divider()
+
+    for movie in movies:
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            if movie.get("poster_path"):
+                st.image(POSTER_BASE_URL + movie["poster_path"])
+
+        with col2:
+            st.markdown(f"### {movie.get('title', '제목 없음')}")
+            st.write(f"⭐ 평점: {movie.get('vote_average', 'N/A')}")
+            st.write(movie.get("overview") or "줄거리 정보가 없습니다.")
+            st.caption(f"이 영화를 추천하는 이유: 당신의 성향과 잘 어울리는 {genre_name} 장르 영화예요.")
 
         st.divider()
-
-        for movie in movies:
-            col1, col2 = st.columns([1, 2])
-
-            with col1:
-                if movie["poster_path"]:
-                    st.image(POSTER_BASE_URL + movie["poster_path"])
-
-            with col2:
-                st.markdown(f"### {movie['title']}")
-                st.write(f"⭐ 평점: {movie['vote_average']}")
-                st.write(movie["overview"] or "줄거리 정보가 없습니다.")
-                st.caption(f"이 영화를 추천하는 이유: 당신의 선택과 잘 어울리는 {genre_name} 감성의 작품이에요.")
-
-            st.divider()
