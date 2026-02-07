@@ -3,54 +3,45 @@
 import streamlit as st
 from scenario import classify_user
 from recommender import recommend_plans
-from ai_advisor import generate_prompt
-from translator import translate_text
+from ai_advisor import build_system_prompt, build_user_prompt, ask_chatgpt
+from i18n import TEXT
 
 st.set_page_config(page_title="Y-Mobile Saver", layout="wide")
 
 # =========================
-# 🔐 Sidebar - API 입력
+# Sidebar
 # =========================
-st.sidebar.title("🔐 API 설정")
+st.sidebar.title("🔐 API & Language")
 
-openai_api_key = st.sidebar.text_input(
-    "ChatGPT API Key",
-    type="password"
-)
+openai_api_key = st.sidebar.text_input("ChatGPT API Key", type="password")
+language = st.sidebar.selectbox("Language", ["한국어", "English"])
 
-deepl_api_key = st.sidebar.text_input(
-    "DeepL API Key (번역용)",
-    type="password"
-)
-
-language = st.sidebar.selectbox(
-    "언어 선택",
-    ["한국어", "English"]
-)
-
-st.sidebar.markdown("---")
-st.sidebar.caption("API 키는 저장되지 않습니다.")
+T = TEXT[language]
 
 # =========================
-# 🏠 Main UI
+# Session State
 # =========================
-st.title("📱 Y-Mobile Saver")
-st.subheader("연세대 신입생 · 외국인 유학생을 위한 통신비 AI 상담")
-
-st.markdown("### 👤 사용자 정보 입력")
-
-budget = st.number_input("월 예산 (원)", min_value=10000, step=5000)
-data_usage = st.number_input("월 데이터 사용량 (GB)", min_value=1)
-ott_apps = st.multiselect("주로 사용하는 OTT", ["Netflix", "YouTube", "Wavve"])
-device_type = st.selectbox("단말 유형", ["자급제", "공시지원금"])
-
-is_foreigner = st.checkbox("외국인 유학생인가요?")
-want_new_device = st.checkbox("기기 변경을 고려 중인가요?")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 # =========================
-# ▶ 실행
+# UI
 # =========================
-if st.button("📊 요금제 추천받기"):
+st.title(T["title"])
+st.subheader(T["subtitle"])
+
+budget = st.number_input(T["budget"], min_value=10000, step=5000)
+data_usage = st.number_input(T["data"], min_value=1)
+ott_apps = st.multiselect(T["ott"], ["Netflix", "YouTube", "Wavve"])
+device_type = st.selectbox(T["device"], ["자급제", "공시지원금"])
+
+is_foreigner = st.checkbox(T["foreigner"])
+want_new_device = st.checkbox(T["new_device"])
+
+# =========================
+# Start Chat
+# =========================
+if st.button(T["start"]) and openai_api_key:
     user = {
         "budget": budget,
         "data_usage": data_usage,
@@ -62,23 +53,39 @@ if st.button("📊 요금제 추천받기"):
 
     scenario = classify_user(user)
     plans = recommend_plans(user)
-    prompt = generate_prompt(user, scenario, plans)
 
-    # 🌍 번역 (영어 선택 시)
-    if language == "English" and deepl_api_key:
-        prompt = translate_text(
-            text=prompt,
-            target_lang="EN",
-            api_key=deepl_api_key
-        )
+    system_prompt = build_system_prompt(language)
+    user_prompt = build_user_prompt(user, scenario, plans)
 
-    st.markdown("## ✅ 추천 요금제 TOP 3")
-    for p in plans:
-        st.success(f"{p['name']} | {p['price']}원 / {p['data_gb']}GB")
+    st.session_state.messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
 
-    st.markdown("## 🤖 AI 상담 프롬프트")
-    st.text_area(
-        "ChatGPT에 전달될 프롬프트",
-        prompt,
-        height=300
+# =========================
+# Chat UI
+# =========================
+for msg in st.session_state.messages:
+    if msg["role"] != "system":
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+# =========================
+# Chat Input
+# =========================
+if user_input := st.chat_input("메시지를 입력하세요"):
+    st.session_state.messages.append(
+        {"role": "user", "content": user_input}
     )
+
+    reply = ask_chatgpt(
+        st.session_state.messages,
+        openai_api_key
+    )
+
+    st.session_state.messages.append(
+        {"role": "assistant", "content": reply}
+    )
+
+    with st.chat_message("assistant"):
+        st.markdown(reply)
