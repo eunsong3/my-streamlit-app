@@ -2,9 +2,9 @@
 
 from openai import OpenAI
 
-def build_system_prompt(language):
-    if language == "English":
-        return "You are a friendly mobile plan expert helping students in Korea."
+def system_prompt(lang):
+    if lang == "EN":
+        return "You are a friendly mobile plan advisor helping students in Korea."
     return "너는 신입생을 돕는 친절한 통신비 전문 상담가야."
 
 def build_user_prompt(user, scenario, plans):
@@ -13,17 +13,17 @@ def build_user_prompt(user, scenario, plans):
     )
 
     return f"""
-[User Scenario]
+[사용자 시나리오]
 {scenario}
 
-[Conditions]
-- Budget: {user['budget']}
-- Data Usage: {user['data_usage']}GB
+[조건]
+- 예산: {user['budget']}원
+- 데이터 사용량: {user['data_usage']}GB
 
-[Recommended Plans]
+[추천 요금제]
 {plan_text}
 
-Please explain why these plans are suitable.
+왜 이 요금제가 적합한지 설명해줘.
 """
 
 def ask_chatgpt(messages, api_key):
