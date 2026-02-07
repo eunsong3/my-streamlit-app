@@ -1,154 +1,84 @@
+# app.py
+
 import streamlit as st
-import pandas as pd
-import openai
-import os
+from scenario import classify_user
+from recommender import recommend_plans
+from ai_advisor import generate_prompt
+from translator import translate_text
 
-# -----------------------------
-# 기본 설정
-# -----------------------------
-st.set_page_config(
-    page_title="Y-Mobile Saver",
-    page_icon="📱",
-    layout="centered"
+st.set_page_config(page_title="Y-Mobile Saver", layout="wide")
+
+# =========================
+# 🔐 Sidebar - API 입력
+# =========================
+st.sidebar.title("🔐 API 설정")
+
+openai_api_key = st.sidebar.text_input(
+    "ChatGPT API Key",
+    type="password"
 )
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+deepl_api_key = st.sidebar.text_input(
+    "DeepL API Key (번역용)",
+    type="password"
+)
 
-# -----------------------------
-# 더미 요금제 데이터 (MVP용)
-# -----------------------------
-plans = pd.DataFrame([
-    {
-        "name": "알뜰폰 LTE 10GB",
-        "price": 19000,
-        "data": 10,
-        "carrier": "MVNO",
-        "type": "가성비"
-    },
-    {
-        "name": "알뜰폰 무제한",
-        "price": 29000,
-        "data": 100,
-        "carrier": "MVNO",
-        "type": "무제한"
-    },
-    {
-        "name": "통신3사 5G 베이직",
-        "price": 55000,
-        "data": 150,
-        "carrier": "SKT/Kt/LGU+",
-        "type": "프리미엄"
-    },
-    {
-        "name": "자급제 + 알뜰폰 15GB",
-        "price": 23000,
-        "data": 15,
-        "carrier": "MVNO",
-        "type": "자급제"
-    }
-])
+language = st.sidebar.selectbox(
+    "언어 선택",
+    ["한국어", "English"]
+)
 
-# -----------------------------
-# 추천 로직 (Rule-based)
-# -----------------------------
-def recommend_plans(budget, data_usage):
-    filtered = plans[
-        (plans["price"] <= budget) &
-        (plans["data"] >= data_usage)
-    ]
+st.sidebar.markdown("---")
+st.sidebar.caption("API 키는 저장되지 않습니다.")
 
-    if filtered.empty:
-        return plans.sort_values("price").head(3)
-
-    return filtered.sort_values("price").head(3)
-
-# -----------------------------
-# OpenAI 설명 생성
-# -----------------------------
-def generate_ai_explanation(user_profile, recommended_plans):
-    prompt = f"""
-너는 통신비 전문 상담가이자 연세대 선배야.
-
-[사용자 정보]
-- 예산: {user_profile['budget']}원
-- 월 데이터 사용량: {user_profile['data']}GB
-- 사용자 유형: {user_profile['scenario']}
-- 주 사용 OTT: {user_profile['ott']}
-
-[추천 요금제]
-{recommended_plans.to_string(index=False)}
-
-단통법 폐지 이후의 상황을 고려해서,
-왜 이 요금제들이 적합한지
-신입생도 이해할 수 있게 친절하게 설명해줘.
-톤은 친근하지만 정보는 정확하게.
-"""
-
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.7
-    )
-
-    return response.choices[0].message.content
-
-# -----------------------------
-# UI
-# -----------------------------
+# =========================
+# 🏠 Main UI
+# =========================
 st.title("📱 Y-Mobile Saver")
-st.caption("연세대 신입생과 외국인 유학생을 위한 맞춤형 통신비 최적화 AI")
+st.subheader("연세대 신입생 · 외국인 유학생을 위한 통신비 AI 상담")
 
-st.divider()
+st.markdown("### 👤 사용자 정보 입력")
 
-st.subheader("📝 간단한 정보만 입력해 주세요")
+budget = st.number_input("월 예산 (원)", min_value=10000, step=5000)
+data_usage = st.number_input("월 데이터 사용량 (GB)", min_value=1)
+ott_apps = st.multiselect("주로 사용하는 OTT", ["Netflix", "YouTube", "Wavve"])
+device_type = st.selectbox("단말 유형", ["자급제", "공시지원금"])
 
-budget = st.slider("월 통신비 예산 (원)", 10000, 80000, 30000, step=5000)
-data_usage = st.slider("월 데이터 사용량 (GB)", 1, 150, 10)
-ott = st.multiselect(
-    "주로 사용하는 OTT 서비스",
-    ["유튜브", "넷플릭스", "웨이브", "티빙", "디즈니+"]
-)
+is_foreigner = st.checkbox("외국인 유학생인가요?")
+want_new_device = st.checkbox("기기 변경을 고려 중인가요?")
 
-scenario = st.radio(
-    "내 상황에 가장 가까운 유형은?",
-    [
-        "외국인 신입생",
-        "경제적 자립 신입생",
-        "기기 교체를 고민 중인 신입생"
-    ]
-)
-
-if st.button("🔍 나에게 딱 맞는 요금제 찾기"):
-    user_profile = {
+# =========================
+# ▶ 실행
+# =========================
+if st.button("📊 요금제 추천받기"):
+    user = {
         "budget": budget,
-        "data": data_usage,
-        "ott": ", ".join(ott) if ott else "없음",
-        "scenario": scenario
+        "data_usage": data_usage,
+        "ott_apps": ott_apps,
+        "device_type": device_type,
+        "is_foreigner": is_foreigner,
+        "want_new_device": want_new_device
     }
 
-    recommended = recommend_plans(budget, data_usage)
+    scenario = classify_user(user)
+    plans = recommend_plans(user)
+    prompt = generate_prompt(user, scenario, plans)
 
-    st.divider()
-    st.subheader("✅ 추천 요금제 TOP 3")
-
-    for idx, row in recommended.iterrows():
-        st.markdown(
-            f"""
-            **{row['name']}**  
-            - 월 요금: {row['price']:,}원  
-            - 데이터: {row['data']}GB  
-            - 통신사 유형: {row['carrier']}
-            """
+    # 🌍 번역 (영어 선택 시)
+    if language == "English" and deepl_api_key:
+        prompt = translate_text(
+            text=prompt,
+            target_lang="EN",
+            api_key=deepl_api_key
         )
 
-    # 절감 비용 시각화
-    st.subheader("💸 월 예상 비용 비교")
-    chart_df = recommended[["name", "price"]].set_index("name")
-    st.bar_chart(chart_df)
+    st.markdown("## ✅ 추천 요금제 TOP 3")
+    for p in plans:
+        st.success(f"{p['name']} | {p['price']}원 / {p['data_gb']}GB")
 
-    # AI 설명
-    with st.spinner("AI가 추천 이유를 정리 중이에요..."):
-        explanation = generate_ai_explanation(user_profile, recommended)
-
-    st.subheader("🤖 AI 상담사의 한마디")
-    st.write(explanation)
+    st.markdown("## 🤖 AI 상담 프롬프트")
+    st.text_area(
+        "ChatGPT에 전달될 프롬프트",
+        prompt,
+        height=300
+    )
