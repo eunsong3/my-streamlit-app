@@ -1,177 +1,154 @@
 import streamlit as st
-import requests
-from openai import OpenAI
+import pandas as pd
+import openai
+import os
 
-# =============================
+# -----------------------------
 # 기본 설정
-# =============================
+# -----------------------------
 st.set_page_config(
-    page_title="🎬 나와 어울리는 영화는?",
-    page_icon="🎬",
-    layout="wide"
+    page_title="Y-Mobile Saver",
+    page_icon="📱",
+    layout="centered"
 )
 
-# =============================
-# Session State (찜하기)
-# =============================
-if "favorites" not in st.session_state:
-    st.session_state.favorites = []
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# =============================
-# CSS (Netflix 스타일)
-# =============================
-st.markdown("""
-<style>
-body { background-color: #000000; }
-.netflix-title {
-    color: #E50914;
-    font-size: 40px;
-    font-weight: 900;
-}
-.movie-card {
-    background-color: #141414;
-    padding: 14px;
-    border-radius: 12px;
-    color: white;
-    transition: transform 0.2s;
-}
-.movie-card:hover { transform: scale(1.04); }
-.movie-title { font-size: 17px; font-weight: 700; }
-.movie-rating { color: #f5c518; margin: 4px 0; }
-.movie-reason { font-size: 13px; color: #dddddd; }
-</style>
-""", unsafe_allow_html=True)
-
-# =============================
-# 상수
-# =============================
-GENRES = {
-    "액션": 28,
-    "코미디": 35,
-    "드라마": 18,
-    "SF": 878,
-    "로맨스": 10749,
-    "판타지": 14,
-}
-
-POSTER_URL = "https://image.tmdb.org/t/p/w500"
-
-AGE_CERT_MAP = {
-    "전체 이용가": "ALL",
-    "12세 이상": "12",
-    "15세 이상": "15",
-    "19세 이상": "19"
-}
-
-# =============================
-# 성향 분석 (5문제 기준)
-# =============================
-def analyze_answers(a):
-    scores = {g: 0 for g in GENRES}
-
-    if a[0] == "집에서 휴식":
-        scores["드라마"] += 2
-    elif a[0] == "친구와 놀기":
-        scores["코미디"] += 2
-    elif a[0] == "새로운 곳 탐험":
-        scores["액션"] += 2
-    else:
-        scores["SF"] += 2
-
-    if a[1] == "혼자 있기":
-        scores["드라마"] += 1
-    elif a[1] == "수다 떨기":
-        scores["코미디"] += 1
-    elif a[1] == "운동하기":
-        scores["액션"] += 1
-
-    if a[2] == "웃는 재미":
-        scores["코미디"] += 2
-    elif a[2] == "감동 스토리":
-        scores["드라마"] += 2
-    elif a[2] == "시각적 영상미":
-        scores["SF"] += 2
-
-    if a[3] == "액티비티":
-        scores["액션"] += 2
-    elif a[3] == "힐링":
-        scores["로맨스"] += 2
-
-    if a[4] == "분위기 메이커":
-        scores["코미디"] += 1
-    elif a[4] == "주도하기":
-        scores["액션"] += 1
-
-    genre = max(scores, key=scores.get)
-    return genre, GENRES[genre]
-
-# =============================
-# TMDB
-# =============================
-def fetch_movies(key, genre_id, rating, age):
-    params = {
-        "api_key": key,
-        "with_genres": genre_id,
-        "vote_average.gte": rating,
-        "certification_country": "KR",
-        "certification.gte": age,
-        "language": "ko-KR",
-        "sort_by": "popularity.desc"
+# -----------------------------
+# 더미 요금제 데이터 (MVP용)
+# -----------------------------
+plans = pd.DataFrame([
+    {
+        "name": "알뜰폰 LTE 10GB",
+        "price": 19000,
+        "data": 10,
+        "carrier": "MVNO",
+        "type": "가성비"
+    },
+    {
+        "name": "알뜰폰 무제한",
+        "price": 29000,
+        "data": 100,
+        "carrier": "MVNO",
+        "type": "무제한"
+    },
+    {
+        "name": "통신3사 5G 베이직",
+        "price": 55000,
+        "data": 150,
+        "carrier": "SKT/Kt/LGU+",
+        "type": "프리미엄"
+    },
+    {
+        "name": "자급제 + 알뜰폰 15GB",
+        "price": 23000,
+        "data": 15,
+        "carrier": "MVNO",
+        "type": "자급제"
     }
-    r = requests.get("https://api.themoviedb.org/3/discover/movie", params=params)
-    return r.json().get("results", [])[:8]
+])
 
-# =============================
-# UI
-# =============================
-st.markdown("<div class='netflix-title'>🎬 나와 어울리는 영화는?</div>", unsafe_allow_html=True)
+# -----------------------------
+# 추천 로직 (Rule-based)
+# -----------------------------
+def recommend_plans(budget, data_usage):
+    filtered = plans[
+        (plans["price"] <= budget) &
+        (plans["data"] >= data_usage)
+    ]
 
-with st.sidebar:
-    tmdb_key = st.text_input("TMDB API Key", type="password")
-    openai_key = st.text_input("OpenAI API Key", type="password")
-    min_rating = st.slider("⭐ 최소 평점", 0.0, 9.0, 7.0, 0.5)
-    min_age = AGE_CERT_MAP[st.selectbox("관람 연령", AGE_CERT_MAP.keys())]
+    if filtered.empty:
+        return plans.sort_values("price").head(3)
 
-questions = [
-    st.radio("1. 주말에 가장 하고 싶은 것은?", ["집에서 휴식", "친구와 놀기", "새로운 곳 탐험", "혼자 취미생활"], index=None),
-    st.radio("2. 스트레스 받으면?", ["혼자 있기", "수다 떨기", "운동하기", "맛있는 거 먹기"], index=None),
-    st.radio("3. 영화에서 중요한 것은?", ["감동 스토리", "시각적 영상미", "깊은 메시지", "웃는 재미"], index=None),
-    st.radio("4. 여행 스타일?", ["계획적", "즉흥적", "액티비티", "힐링"], index=None),
-    st.radio("5. 친구 사이에서 나는?", ["듣는 역할", "주도하기", "분위기 메이커", "필요할 때 나타남"], index=None),
-]
+    return filtered.sort_values("price").head(3)
 
-if st.button("결과 보기"):
-    if None in questions or not tmdb_key or not openai_key:
-        st.warning("모든 항목을 입력해주세요")
-        st.stop()
+# -----------------------------
+# OpenAI 설명 생성
+# -----------------------------
+def generate_ai_explanation(user_profile, recommended_plans):
+    prompt = f"""
+너는 통신비 전문 상담가이자 연세대 선배야.
 
-    genre, genre_id = analyze_answers(questions)
-    movies = fetch_movies(tmdb_key, genre_id, min_rating, min_age)
+[사용자 정보]
+- 예산: {user_profile['budget']}원
+- 월 데이터 사용량: {user_profile['data']}GB
+- 사용자 유형: {user_profile['scenario']}
+- 주 사용 OTT: {user_profile['ott']}
 
-    client = OpenAI(api_key=openai_key)
+[추천 요금제]
+{recommended_plans.to_string(index=False)}
 
-    st.subheader(f"🎯 추천 장르: {genre}")
-
-    cols = st.columns(4)
-    for i, m in enumerate(movies):
-        with cols[i % 4]:
-            prompt = f"""
-사용자 성향: {questions}
-영화 제목: {m['title']}
-줄거리: {m.get('overview','')}
-
-이 사용자에게 이 영화를 추천하는 이유를 2~3문장으로 설명해줘.
+단통법 폐지 이후의 상황을 고려해서,
+왜 이 요금제들이 적합한지
+신입생도 이해할 수 있게 친절하게 설명해줘.
+톤은 친근하지만 정보는 정확하게.
 """
-            reason = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}]
-            ).choices[0].message.content
 
-            st.markdown(f"""
-            <div class="movie-card">
-                <img src="{POSTER_URL + m['poster_path']}" width="100%">
-                <div class="movie-title">{m['title']}</div>
-                <div class="movie-rating">⭐ {m['vote_average']}</div>
-                <div class="movie-reason">{reason}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7
+    )
+
+    return response.choices[0].message.content
+
+# -----------------------------
+# UI
+# -----------------------------
+st.title("📱 Y-Mobile Saver")
+st.caption("연세대 신입생과 외국인 유학생을 위한 맞춤형 통신비 최적화 AI")
+
+st.divider()
+
+st.subheader("📝 간단한 정보만 입력해 주세요")
+
+budget = st.slider("월 통신비 예산 (원)", 10000, 80000, 30000, step=5000)
+data_usage = st.slider("월 데이터 사용량 (GB)", 1, 150, 10)
+ott = st.multiselect(
+    "주로 사용하는 OTT 서비스",
+    ["유튜브", "넷플릭스", "웨이브", "티빙", "디즈니+"]
+)
+
+scenario = st.radio(
+    "내 상황에 가장 가까운 유형은?",
+    [
+        "외국인 신입생",
+        "경제적 자립 신입생",
+        "기기 교체를 고민 중인 신입생"
+    ]
+)
+
+if st.button("🔍 나에게 딱 맞는 요금제 찾기"):
+    user_profile = {
+        "budget": budget,
+        "data": data_usage,
+        "ott": ", ".join(ott) if ott else "없음",
+        "scenario": scenario
+    }
+
+    recommended = recommend_plans(budget, data_usage)
+
+    st.divider()
+    st.subheader("✅ 추천 요금제 TOP 3")
+
+    for idx, row in recommended.iterrows():
+        st.markdown(
+            f"""
+            **{row['name']}**  
+            - 월 요금: {row['price']:,}원  
+            - 데이터: {row['data']}GB  
+            - 통신사 유형: {row['carrier']}
+            """
+        )
+
+    # 절감 비용 시각화
+    st.subheader("💸 월 예상 비용 비교")
+    chart_df = recommended[["name", "price"]].set_index("name")
+    st.bar_chart(chart_df)
+
+    # AI 설명
+    with st.spinner("AI가 추천 이유를 정리 중이에요..."):
+        explanation = generate_ai_explanation(user_profile, recommended)
+
+    st.subheader("🤖 AI 상담사의 한마디")
+    st.write(explanation)
