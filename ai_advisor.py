@@ -1,27 +1,45 @@
 # ai_advisor.py
 
-def generate_prompt(user, scenario, plans):
-    plan_text = "\n".join(
-        [f"- {p['name']} : 월 {p['price']}원 / {p['data_gb']}GB" for p in plans]
+from openai import OpenAI
+
+def build_system_prompt(language):
+    if language == "English":
+        return (
+            "You are a mobile plan expert and a friendly senior student in Korea. "
+            "Explain mobile plans clearly for freshmen and international students."
+        )
+    return (
+        "너는 통신비 전문 상담가이자 친절한 대학교 선배야. "
+        "신입생과 외국인 유학생이 이해하기 쉽게 설명해줘."
     )
 
-    prompt = f"""
-너는 통신비 전문 상담가이자 대학교 선배야.
+def build_user_prompt(user, scenario, plans):
+    plan_text = "\n".join(
+        [f"- {p['name']} ({p['price']}원 / {p['data_gb']}GB)" for p in plans]
+    )
 
+    return f"""
 [사용자 유형]
 {scenario}
 
-[사용자 정보]
-- 월 예산: {user['budget']}원
-- 월 데이터 사용량: {user['data_usage']}GB
-- 주요 OTT: {", ".join(user['ott_apps']) if user['ott_apps'] else "없음"}
+[조건]
+- 예산: {user['budget']}원
+- 데이터 사용량: {user['data_usage']}GB
 - 단말 유형: {user['device_type']}
 
-[추천 요금제 TOP 3]
+[추천 요금제]
 {plan_text}
 
-단통법 폐지 이후 기준으로,
-초보자도 이해할 수 있도록
-왜 이 요금제가 좋은지 설명해줘.
+왜 이 요금제가 적합한지 설명해줘.
 """
-    return prompt
+
+def ask_chatgpt(messages, api_key):
+    client = OpenAI(api_key=api_key)
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        temperature=0.7
+    )
+
+    return response.choices[0].message.content
