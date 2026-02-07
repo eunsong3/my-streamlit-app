@@ -8,16 +8,21 @@ TEXT = {
         "sidebar_title": "⚙️ 설정",
         "language": "언어 선택",
         "api_key": "ChatGPT API Key",
+
         "scenario_title": "👤 사용자 시나리오",
         "scenario_label": "시나리오 선택",
-        "scenario_1": "외국인 유학생",
-        "scenario_2": "경제적 자립 신입생",
-        "scenario_3": "기기 교체 희망 신입생",
+        "scenario_foreign": "외국인 유학생",
+        "scenario_independent": "경제적 자립 신입생",
+        "scenario_device": "기기 교체 희망 신입생",
+
         "data_calc_btn": "📊 평균 데이터 사용량 계산기",
 
         "budget": "월 예산 (원)",
         "data": "월 데이터 사용량 (GB)",
         "device": "단말 유형",
+        "device_unlocked": "자급제",
+        "device_subsidy": "공시지원금",
+
         "start": "💬 상담 시작하기",
 
         "calc_title": "📊 내 평균 데이터 사용량은?",
@@ -39,16 +44,21 @@ TEXT = {
         "sidebar_title": "⚙️ Settings",
         "language": "Language",
         "api_key": "ChatGPT API Key",
+
         "scenario_title": "👤 User Scenario",
         "scenario_label": "Select a scenario",
-        "scenario_1": "International Student",
-        "scenario_2": "Financially Independent Freshman",
-        "scenario_3": "Looking to Change Device",
+        "scenario_foreign": "International Student",
+        "scenario_independent": "Financially Independent Freshman",
+        "scenario_device": "Looking to Change Device",
+
         "data_calc_btn": "📊 Average Data Usage Calculator",
 
         "budget": "Monthly Budget (KRW)",
         "data": "Monthly Data Usage (GB)",
         "device": "Device Type",
+        "device_unlocked": "Unlocked (BYOD)",
+        "device_subsidy": "Carrier Subsidy",
+
         "start": "💬 Start Consultation",
 
         "calc_title": "📊 What is my average data usage?",
