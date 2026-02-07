@@ -18,6 +18,10 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "estimated_data" not in st.session_state:
     st.session_state.estimated_data = None
+if "translated_texts" not in st.session_state:
+    st.session_state.translated_texts = {}
+if "prev_lang" not in st.session_state:
+    st.session_state.prev_lang = "KO"
 
 # ======================
 # Sidebar
@@ -30,60 +34,71 @@ deepl_key = st.sidebar.text_input(TEXT["deepl_key"], type="password")
 lang_label = st.sidebar.selectbox(TEXT["language"], ["한국어", "English"])
 TARGET_LANG = "EN" if lang_label == "English" else "KO"
 
-def t(text):
-    return translate(text, TARGET_LANG, deepl_key)
+# 언어 변경 시 번역 캐시 초기화
+if st.session_state.prev_lang != TARGET_LANG:
+    st.session_state.translated_texts = {}
+    st.session_state.prev_lang = TARGET_LANG
+
+def t(key):
+    if TARGET_LANG == "KO":
+        return TEXT[key]
+    if key in st.session_state.translated_texts:
+        return st.session_state.translated_texts[key]
+    translated = translate(TEXT[key], "EN", deepl_key)
+    st.session_state.translated_texts[key] = translated
+    return translated
 
 scenario = st.sidebar.radio(
-    t(TEXT["scenario_title"]),
+    t("scenario_title"),
     [
-        t(TEXT["scenario_foreign"]),
-        t(TEXT["scenario_independent"]),
-        t(TEXT["scenario_device"])
+        t("scenario_foreign"),
+        t("scenario_independent"),
+        t("scenario_device")
     ]
 )
 
-if st.sidebar.button(t(TEXT["data_calc_btn"])):
+if st.sidebar.button(t("data_calc_btn")):
     st.session_state.page = "calculator"
 
 # ======================
 # Calculator Page
 # ======================
 if st.session_state.page == "calculator":
-    st.title(t(TEXT["calc_title"]))
-    st.subheader(t(TEXT["calc_subtitle"]))
+    st.title(t("calc_title"))
+    st.subheader(t("calc_subtitle"))
 
-    hours = st.slider(t(TEXT["calc_hours"]), 0.0, 10.0, 2.0)
-    apps = st.multiselect(t(TEXT["calc_apps"]), ["YouTube", "Netflix", "Instagram"])
-    heavy = st.checkbox(t(TEXT["calc_download"]))
+    hours = st.slider(t("calc_hours"), 0.0, 10.0, 2.0)
+    apps = st.multiselect(t("calc_apps"), ["YouTube", "Netflix", "Instagram"])
+    heavy = st.checkbox(t("calc_download"))
 
-    if st.button(t(TEXT["calc_button"])):
+    if st.button(t("calc_button")):
         est = estimate_monthly_data(hours, apps, heavy)
         st.session_state.estimated_data = est
-        st.success(f"{t(TEXT['calc_result'])} **{est}GB**")
-        st.button(t(TEXT["back"]), on_click=lambda: setattr(st.session_state, "page", "main"))
+        st.success(f"{t('calc_result')} **{est}GB**")
+        st.button(t("back"), on_click=lambda: setattr(st.session_state, "page", "main"))
 
     st.stop()
 
 # ======================
 # Main Page
 # ======================
-st.title(t(TEXT["title"]))
-st.subheader(t(TEXT["subtitle"]))
+st.title(t("title"))
+st.subheader(t("subtitle"))
 
-budget = st.number_input(t(TEXT["budget"]), min_value=10000, step=5000)
+budget = st.number_input(t("budget"), min_value=10000, step=5000)
 data_usage = st.number_input(
-    t(TEXT["data"]),
+    t("data"),
     min_value=1,
     value=st.session_state.estimated_data or 10
 )
 
 DEVICE_OPTIONS = {
-    "unlocked": t(TEXT["device_unlocked"]),
-    "subsidy": t(TEXT["device_subsidy"])
+    "unlocked": t("device_unlocked"),
+    "subsidy": t("device_subsidy")
 }
 
 device_type = st.selectbox(
-    t(TEXT["device"]),
+    t("device"),
     options=list(DEVICE_OPTIONS.keys()),
     format_func=lambda x: DEVICE_OPTIONS[x]
 )
@@ -91,7 +106,7 @@ device_type = st.selectbox(
 # ======================
 # Start Chat
 # ======================
-if st.button(t(TEXT["start"])) and openai_key:
+if st.button(t("start")) and openai_key:
     user = {
         "budget": budget,
         "data_usage": data_usage,
@@ -111,9 +126,13 @@ if st.button(t(TEXT["start"])) and openai_key:
 for msg in st.session_state.messages:
     if msg["role"] != "system":
         with st.chat_message(msg["role"]):
-            st.markdown(t(msg["content"]))
+            st.markdown(
+                translate(msg["content"], TARGET_LANG, deepl_key)
+                if msg["role"] == "assistant"
+                else msg["content"]
+            )
 
-if user_input := st.chat_input(t(TEXT["chat_placeholder"])):
+if user_input := st.chat_input(t("chat_placeholder")):
     st.session_state.messages.append(
         {"role": "user", "content": user_input}
     )
