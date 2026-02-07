@@ -2,11 +2,9 @@
 
 TEXT = {
     "한국어": {
-        # App
         "title": "📱 Y-Mobile Saver",
         "subtitle": "연세대 신입생 · 외국인 유학생을 위한 통신비 AI 상담",
 
-        # Sidebar
         "sidebar_title": "⚙️ 설정",
         "language": "언어 선택",
         "api_key": "ChatGPT API Key",
@@ -17,13 +15,11 @@ TEXT = {
         "scenario_3": "기기 교체 희망 신입생",
         "data_calc_btn": "📊 평균 데이터 사용량 계산기",
 
-        # Main input
         "budget": "월 예산 (원)",
         "data": "월 데이터 사용량 (GB)",
         "device": "단말 유형",
         "start": "💬 상담 시작하기",
 
-        # Calculator
         "calc_title": "📊 내 평균 데이터 사용량은?",
         "calc_subtitle": "평균 데이터 사용량 계산기",
         "calc_hours": "와이파이가 없는 환경에서의 평균 휴대폰 사용시간 (시간/일)",
@@ -33,16 +29,13 @@ TEXT = {
         "calc_result": "👉 예상 월 데이터 사용량은 약",
         "back": "⬅ 상담으로 돌아가기",
 
-        # Chat
         "chat_placeholder": "메시지를 입력하세요"
     },
 
     "English": {
-        # App
         "title": "📱 Y-Mobile Saver",
         "subtitle": "AI Mobile Plan Advisor for Yonsei Students",
 
-        # Sidebar
         "sidebar_title": "⚙️ Settings",
         "language": "Language",
         "api_key": "ChatGPT API Key",
@@ -53,13 +46,11 @@ TEXT = {
         "scenario_3": "Looking to Change Device",
         "data_calc_btn": "📊 Average Data Usage Calculator",
 
-        # Main input
         "budget": "Monthly Budget (KRW)",
         "data": "Monthly Data Usage (GB)",
         "device": "Device Type",
         "start": "💬 Start Consultation",
 
-        # Calculator
         "calc_title": "📊 What is my average data usage?",
         "calc_subtitle": "Average Data Usage Calculator",
         "calc_hours": "Average phone usage time without Wi-Fi (hours/day)",
@@ -69,5 +60,6 @@ TEXT = {
         "calc_result": "👉 Your estimated monthly data usage is",
         "back": "⬅ Back to consultation",
 
-        # Chat
-        "chat_pl_
+        "chat_placeholder": "Type your message"
+    }
+}
