@@ -4,14 +4,8 @@ from openai import OpenAI
 
 def build_system_prompt(language):
     if language == "English":
-        return (
-            "You are a mobile plan expert and a friendly senior student in Korea. "
-            "Explain mobile plans clearly for freshmen and international students."
-        )
-    return (
-        "너는 통신비 전문 상담가이자 친절한 대학교 선배야. "
-        "신입생과 외국인 유학생이 이해하기 쉽게 설명해줘."
-    )
+        return "You are a friendly mobile plan expert helping students in Korea."
+    return "너는 신입생을 돕는 친절한 통신비 전문 상담가야."
 
 def build_user_prompt(user, scenario, plans):
     plan_text = "\n".join(
@@ -19,18 +13,17 @@ def build_user_prompt(user, scenario, plans):
     )
 
     return f"""
-[사용자 유형]
+[User Scenario]
 {scenario}
 
-[조건]
-- 예산: {user['budget']}원
-- 데이터 사용량: {user['data_usage']}GB
-- 단말 유형: {user['device_type']}
+[Conditions]
+- Budget: {user['budget']}
+- Data Usage: {user['data_usage']}GB
 
-[추천 요금제]
+[Recommended Plans]
 {plan_text}
 
-왜 이 요금제가 적합한지 설명해줘.
+Please explain why these plans are suitable.
 """
 
 def ask_chatgpt(messages, api_key):
