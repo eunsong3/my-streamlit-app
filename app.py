@@ -1,4 +1,4 @@
-# app.py
+# app.py (발췌)
 
 import streamlit as st
 from recommender import recommend_plans
@@ -13,81 +13,88 @@ st.set_page_config(page_title="Y-Mobile Saver", layout="wide")
 # =========================
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
 if "estimated_data" not in st.session_state:
     st.session_state.estimated_data = None
-
 if "page" not in st.session_state:
     st.session_state.page = "main"
 
 # =========================
 # Sidebar
 # =========================
-st.sidebar.title("⚙️ 설정")
+language = st.sidebar.selectbox(
+    "Language",
+    ["한국어", "English"]
+)
 
-language = st.sidebar.selectbox("Language", ["한국어", "English"])
 T = TEXT[language]
 
-openai_api_key = st.sidebar.text_input("ChatGPT API Key", type="password")
+st.sidebar.title(T["sidebar_title"])
 
-st.sidebar.markdown("### 👤 사용자 시나리오")
+openai_api_key = st.sidebar.text_input(
+    T["api_key"],
+    type="password"
+)
+
+st.sidebar.markdown(f"### {T['scenario_title']}")
 scenario = st.sidebar.radio(
-    "시나리오 선택",
-    ["외국인 유학생", "경제적 자립 신입생", "기기 교체 희망 신입생"]
+    T["scenario_label"],
+    [
+        T["scenario_1"],
+        T["scenario_2"],
+        T["scenario_3"]
+    ]
 )
 
 st.sidebar.markdown("---")
 
-if st.sidebar.button("📊 평균 데이터 사용량 계산기"):
+if st.sidebar.button(T["data_calc_btn"]):
     st.session_state.page = "calculator"
 
 # =========================
-# 📊 데이터 계산기 페이지
+# Calculator Page
 # =========================
 if st.session_state.page == "calculator":
-    st.title("📊 내 평균 데이터 사용량은?")
-    st.subheader("평균 데이터 사용량 계산기")
+    st.title(T["calc_title"])
+    st.subheader(T["calc_subtitle"])
 
     hours = st.slider(
-        "와이파이가 없는 환경에서의 평균 휴대폰 사용시간 (시간/일)",
+        T["calc_hours"],
         0.0, 10.0, 2.0
     )
 
     apps = st.multiselect(
-        "즐겨 사용하는 앱",
-        ["YouTube", "Netflix", "Instagram", "웹서핑"]
+        T["calc_apps"],
+        ["YouTube", "Netflix", "Instagram", "Web Browsing"]
     )
 
-    heavy_download = st.checkbox("파일/앱을 자주 다운로드하나요?")
+    heavy_download = st.checkbox(T["calc_download"])
 
-    if st.button("📈 내 데이터 사용량 계산하기"):
+    if st.button(T["calc_button"]):
         estimated = estimate_monthly_data(hours, apps, heavy_download)
         st.session_state.estimated_data = estimated
+        st.success(f"{T['calc_result']} **{estimated}GB**")
 
-        st.success(f"👉 예상 월 데이터 사용량은 약 **{estimated}GB** 입니다.")
-        st.button("⬅ 상담으로 돌아가기", on_click=lambda: setattr(st.session_state, "page", "main"))
+        st.button(
+            T["back"],
+            on_click=lambda: setattr(st.session_state, "page", "main")
+        )
 
     st.stop()
 
 # =========================
-# 🏠 Main 상담 페이지
+# Main Page
 # =========================
 st.title(T["title"])
 st.subheader(T["subtitle"])
 
 budget = st.number_input(T["budget"], min_value=10000, step=5000)
-
 data_usage = st.number_input(
     T["data"],
     min_value=1,
     value=st.session_state.estimated_data or 10
 )
-
 device_type = st.selectbox(T["device"], ["자급제", "공시지원금"])
 
-# =========================
-# 상담 시작
-# =========================
 if st.button(T["start"]) and openai_api_key:
     user = {
         "budget": budget,
@@ -114,7 +121,7 @@ for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-if user_input := st.chat_input("메시지를 입력하세요"):
+if user_input := st.chat_input(T["chat_placeholder"]):
     st.session_state.messages.append(
         {"role": "user", "content": user_input}
     )
