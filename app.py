@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 from i18n import TEXT
 from translator import translate
@@ -26,79 +24,129 @@ if "page" not in st.session_state:
 # =====================
 # Sidebar
 # =====================
-st.sidebar.title(TEXT["sidebar_title"])
+st.sidebar.title("⚙️ 설정")
 
 deepl_key = st.sidebar.text_input("DeepL API Key", type="password")
 openai_key = st.sidebar.text_input("ChatGPT API Key", type="password")
 
-lang_label = st.sidebar.selectbox(TEXT["language"], ["한국어", "English"])
-st.session_state.lang = "EN" if lang_label == "English" else "KO"
+lang = st.sidebar.selectbox("언어 선택", ["한국어", "English"])
+st.session_state.lang = "EN" if lang == "English" else "KO"
 
-def t(key):
+def t(text):
     if st.session_state.lang == "KO":
-        return TEXT[key]
-    if key in st.session_state.translated:
-        return st.session_state.translated[key]
-    translated = translate(TEXT[key], "EN", deepl_key)
-    st.session_state.translated[key] = translated
+        return text
+    if text in st.session_state.translated:
+        return st.session_state.translated[text]
+    translated = translate(text, "EN", deepl_key)
+    st.session_state.translated[text] = translated
     return translated
 
-if st.sidebar.button(t("calculator")):
+if st.sidebar.button("📊 평균 데이터 사용량 계산기"):
     st.session_state.page = "calculator"
 
 scenario = st.sidebar.radio(
-    t("scenario_title"),
-    [t("scenario_foreign"), t("scenario_independent"), t("scenario_device")]
+    "👤 사용자 시나리오",
+    [
+        "외국인 유학생",
+        "경제적 자립 준비 학생",
+        "기기 교체 희망 학생"
+    ]
 )
 
 # =====================
-# 데이터 계산기 페이지
+# 데이터 계산기
 # =====================
 if st.session_state.page == "calculator":
-    st.title("📊 내 평균 데이터 사용량은?")
-    st.subheader("평균 데이터 사용량 계산기")
+    st.title(t("내 평균 데이터 사용량은?"))
+    st.subheader(t("평균 데이터 사용량 계산기"))
 
-    hours = st.slider("주 평균 사용시간", 1, 80, 20)
+    hours = st.slider(t("와이파이 없는 환경에서 주 평균 사용시간"), 1, 80, 20)
     apps = st.multiselect(
-        "즐겨 사용하는 앱",
+        t("즐겨 사용하는 앱"),
         ["SNS/메신저", "유튜브/넷플릭스", "게임", "지도/검색"]
     )
-    downloads = st.checkbox("파일/앱을 자주 다운로드하나요?")
+    downloads = st.checkbox(t("파일/앱을 자주 다운로드하나요?"))
 
-    if st.button("계산하기") and apps:
+    if st.button(t("계산하기")) and apps:
         result = calculate_monthly_data(hours, apps, downloads)
-        st.success(f"예상 월 데이터 사용량: **{result}GB**")
+        st.success(t(f"예상 월 데이터 사용량은 약 {result}GB 입니다."))
 
     st.stop()
 
 # =====================
-# 메인 화면
+# 기기 교체 희망 학생
 # =====================
-st.title(t("title"))
-st.subheader(t("subtitle"))
+if scenario == "기기 교체 희망 학생":
+    st.title(t("📱 기기 교체 요금제 추천"))
 
-budget = st.number_input(t("budget"), 10000, 70000, 30000, step=5000)
-data = st.number_input(t("data"), 1, 100, 15)
+    maker = st.selectbox(t("제조사"), ["애플", "삼성"])
+
+    model = st.selectbox(
+        t("휴대폰 기종"),
+        ["아이폰 17 (256GB)"] if maker == "애플"
+        else ["갤럭시 S25", "갤럭시 Z 플립7 (256GB)"]
+    )
+
+    price = st.selectbox(t("요금 수준 선택"), ["~4만원", "~5만원", "~6만원"])
+
+    key = (maker, model, price)
+
+    st.divider()
+    st.subheader(t("추천 결과"))
+
+    if key in DEVICE_PLANS:
+        for name, fee, discount, support in DEVICE_PLANS[key]:
+            st.success(
+                t(
+                    f"""
+{name}
+- 요금제 및 월정액: 월 {fee:,}원
+- 선택약정할인 (2년): {discount:,}원
+- 공통지원금 (기기변경): {support:,}원
+"""
+                )
+    else:
+        st.warning(t("선택한 조건에 대한 요금제가 없습니다."))
+
+    st.stop()
 
 # =====================
-# 상담 시작
+# 외국인 유학생 / 경제적 자립 준비 학생
 # =====================
-if st.button(t("start_chat")) and openai_key:
+st.title(t("📱 알뜰폰 요금제 AI 추천"))
+
+budget = st.number_input(t("월 예산 (원)"), 10000, 70000, 30000, step=5000)
+data = st.number_input(t("월 데이터 사용량 (GB)"), 1, 100, 15)
+
+if st.button(t("💬 상담 시작하기")) and openai_key:
+    plans = fetch_mobile_plans("")
+    user = {
+        "budget": budget,
+        "data_usage": data,
+        "scenario": scenario
+    }
+    recommended = recommend_plans(user, plans)
+
     st.session_state.chat = [
         {
             "role": "user",
             "content": f"""
-시나리오: {scenario}
-예산: {budget}원
-데이터 사용량: {data}GB
-
-이 조건에 맞는 요금제를 추천해줘.
+나는 {scenario}이야.
+월 예산은 {budget}원이고,
+월 데이터 사용량은 {data}GB야.
+알뜰폰 요금제를 추천해줘.
 """
         }
     ]
 
+    st.subheader(t("📌 추천 알뜰폰 요금제"))
+    for p in recommended:
+        st.success(
+            t(f"{p['name']} | 월 {p['price']}원 | {p['data_gb']}GB")
+        )
+
 # =====================
-# 채팅 UI
+# Chat UI
 # =====================
 for msg in st.session_state.chat:
     with st.chat_message(msg["role"]):
@@ -106,7 +154,7 @@ for msg in st.session_state.chat:
             translate(msg["content"], st.session_state.lang, deepl_key)
         )
 
-if prompt := st.chat_input(t("chat_placeholder")):
+if prompt := st.chat_input(t("궁금한 점을 자유롭게 물어보세요")):
     st.session_state.chat.append({"role": "user", "content": prompt})
 
     answer = chat_with_ai(
