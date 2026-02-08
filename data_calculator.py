@@ -1,25 +1,20 @@
 # data_calculator.py
 
-def estimate_monthly_data(hours_per_day, apps, heavy_download):
-    data = 0
+def calculate_monthly_data(hours_per_week, apps, downloads):
+    base_per_hour = 0.3  # GB
 
-    if hours_per_day < 1:
-        data += 3
-    elif hours_per_day < 3:
-        data += 7
-    elif hours_per_day < 5:
-        data += 15
-    else:
-        data += 25
+    app_weight = {
+        "SNS/메신저": 1.0,
+        "유튜브/넷플릭스": 2.5,
+        "게임": 2.0,
+        "지도/검색": 0.8
+    }
 
-    if "YouTube" in apps:
-        data += 10
-    if "Netflix" in apps:
-        data += 15
-    if "Instagram" in apps:
-        data += 5
+    weekly = hours_per_week * base_per_hour
+    weekly *= sum(app_weight[a] for a in apps) / len(apps)
 
-    if heavy_download:
-        data += 10
+    if downloads:
+        weekly += 3
 
-    return data
+    monthly = weekly * 4
+    return round(monthly, 1)
