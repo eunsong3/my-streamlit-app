@@ -27,19 +27,14 @@ def fetch_mobile_plans(service_key):
                 plans.append({
                     "name": item.findtext("chargeName"),
                     "price": int(price),
-                    "data_gb": int(data_mb) / 1024,
+                    "data_gb": int(data_mb) / 1024
                 })
 
         if plans:
             return plans
-
     except Exception:
         pass
 
-    return fallback_plans()
-
-
-def fallback_plans():
     return [
         {"name": "우체국 알뜰폰 LTE 15GB", "price": 29900, "data_gb": 15},
         {"name": "우체국 알뜰폰 LTE 30GB", "price": 33000, "data_gb": 30},
