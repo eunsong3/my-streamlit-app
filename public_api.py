@@ -5,36 +5,35 @@ import xml.etree.ElementTree as ET
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-BASE_URL = "https://openapi.epost.go.kr"
+BASE_URL = "http://openapi.epost.go.kr"
 PATH = "/postal/retrieveAlddlChargeService/retrieveAlddlChargeService/getAlddlChargeList"
 
-def fetch_mobile_plans(service_key, rows=50):
+def fetch_mobile_plans(service_key, rows=30):
     url = BASE_URL + PATH
 
     params = {
-        "ServiceKey": service_key,  # ✅ Encoding Key 필수
+        "ServiceKey": service_key,   # 반드시 URL Encode된 키
         "numOfRows": rows,
         "pageNo": 1
     }
 
     session = requests.Session()
-    retries = Retry(
-        total=3,
-        backoff_factor=1.5,
-        status_forcelist=[500, 502, 503, 504]
-    )
-    session.mount("https://", HTTPAdapter(max_retries=retries))
+    retries = Retry(total=3, backoff_factor=1.5)
+    session.mount("http://", HTTPAdapter(max_retries=retries))
 
     try:
         response = session.get(url, params=params, timeout=20)
         response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError("우체국 알뜰폰 API 연결 실패") from e
+    except requests.exceptions.RequestException:
+        raise RuntimeError("공공데이터 서버 연결 실패")
 
     root = ET.fromstring(response.content)
-    plans = []
 
-    for item in root.findall(".//AlddlCharge"):
+    # 명세서 기준: alddlCharge (소문자)
+    items = root.findall(".//alddlCharge")
+
+    plans = []
+    for item in items:
         price = item.findtext("chargeAmount", "0")
         data_mb = item.findtext("dataAmount", "0")
 
@@ -42,7 +41,6 @@ def fetch_mobile_plans(service_key, rows=50):
             continue
 
         plans.append({
-            "carrier": item.findtext("telecomName"),
             "name": item.findtext("chargeName"),
             "price": int(price),
             "data_gb": int(data_mb) / 1024,
@@ -50,6 +48,6 @@ def fetch_mobile_plans(service_key, rows=50):
         })
 
     if not plans:
-        raise RuntimeError("API 응답은 받았으나 요금제 데이터가 없습니다")
+        raise RuntimeError("요금제 데이터가 없습니다 (응답은 성공)")
 
     return plans
