@@ -1,74 +1,92 @@
 # app.py
 
 import streamlit as st
-from i18n import TEXT
-from translator import translate
+from data_calculator import calculate_monthly_data
+from device_plans import DEVICE_PLANS
 from public_api import fetch_mobile_plans
 from recommender import recommend_plans
-from ai_advisor import ask_chatgpt
 
 st.set_page_config(page_title="Y-Mobile Saver", layout="wide")
 
-# ===== Session State =====
-if "lang" not in st.session_state:
-    st.session_state.lang = "KO"
-if "translated" not in st.session_state:
-    st.session_state.translated = {}
+# =====================
+# Sidebar
+# =====================
+st.sidebar.title("⚙️ 설정")
 
-def t(key):
-    if key not in TEXT:
-        return key
-    if st.session_state.lang == "KO":
-        return TEXT[key]
-    if key in st.session_state.translated:
-        return st.session_state.translated[key]
-    translated = translate(TEXT[key], "EN", deepl_key)
-    st.session_state.translated[key] = translated
-    return translated
+if "page" not in st.session_state:
+    st.session_state.page = "main"
 
-# ===== Sidebar =====
-st.sidebar.title(t("sidebar_title"))
-
-openai_key = st.sidebar.text_input(t("openai_key"), type="password")
-deepl_key = st.sidebar.text_input(t("deepl_key"), type="password")
-public_key = st.sidebar.text_input(t("public_key"), type="password")
-
-lang_label = st.sidebar.selectbox(t("language"), ["한국어", "English"])
-st.session_state.lang = "EN" if lang_label == "English" else "KO"
+if st.sidebar.button("📊 평균 데이터 사용량 계산기"):
+    st.session_state.page = "calculator"
 
 scenario = st.sidebar.radio(
-    t("scenario_title"),
-    [
-        t("scenario_foreign"),
-        t("scenario_device"),
-        t("scenario_independent")
-    ]
+    "👤 사용자 시나리오",
+    ["외국인 유학생", "경제적 자립 준비 학생", "기기 교체 희망 학생"]
 )
 
-# ===== Main =====
-st.title(t("title"))
-st.subheader(t("subtitle"))
+# =====================
+# 데이터 계산기 페이지
+# =====================
+if st.session_state.page == "calculator":
+    st.title("📊 내 평균 데이터 사용량은?")
+    st.subheader("평균 데이터 사용량 계산기")
 
-budget = st.number_input(t("budget"), min_value=10000, step=5000)
-data_usage = st.number_input(t("data"), min_value=1)
+    hours = st.slider("와이파이 없는 환경에서 주 평균 사용시간", 1, 80, 20)
 
-if st.button(t("start")) and openai_key:
-    plans = fetch_mobile_plans(public_key)
+    apps = st.multiselect(
+        "즐겨 사용하는 앱",
+        ["SNS/메신저", "유튜브/넷플릭스", "게임", "지도/검색"]
+    )
 
-    user = {
-        "budget": budget,
-        "data_usage": data_usage,
-        "scenario": scenario
-    }
+    downloads = st.checkbox("파일/앱을 자주 다운로드하나요?")
 
-    recommended = recommend_plans(user, plans)
+    if st.button("계산하기") and apps:
+        result = calculate_monthly_data(hours, apps, downloads)
+        st.success(f"📱 예상 월 데이터 사용량은 약 **{result}GB** 입니다.")
 
-    st.markdown("### ✅ 추천 요금제")
-    for p in recommended:
-        st.success(f"{p['name']} | {p['price']}원 | {p['data_gb']}GB")
+    st.stop()
 
-    answer = ask_chatgpt(recommended, user, openai_key, st.session_state.lang)
-    answer = translate(answer, st.session_state.lang, deepl_key)
+# =====================
+# 기기 교체 시나리오
+# =====================
+if scenario == "기기 교체 희망 학생":
+    st.title("📲 기기 교체 요금제 추천")
 
-    with st.chat_message("assistant"):
-        st.markdown(answer)
+    maker = st.selectbox("제조사", ["애플", "삼성"])
+
+    model = st.selectbox(
+        "휴대폰 기종",
+        ["아이폰 17 (256GB)"] if maker == "애플"
+        else ["갤럭시 S25", "갤럭시 Z 플립7 (256GB)"]
+    )
+
+    price = st.selectbox("요금 수준 선택", ["~4만원", "~5만원", "~6만원"])
+
+    key = (maker, model, price)
+
+    if key in DEVICE_PLANS:
+        for name, fee, discount, support in DEVICE_PLANS[key]:
+            st.success(
+                f"""
+**{name}**
+- 요금제 및 월정액: 월 {fee:,}원  
+- 선택약정할인 (2년): {discount:,}원  
+- 공통지원금 (기기변경): {support:,}원
+"""
+            )
+    st.stop()
+
+# =====================
+# 알뜰폰 요금제 추천
+# =====================
+st.title("📱 알뜰폰 요금제 추천")
+
+budget = st.number_input("월 예산 (원)", 10000, 70000, 30000, step=5000)
+data = st.number_input("월 데이터 사용량 (GB)", 1, 100, 15)
+
+plans = fetch_mobile_plans("")
+user = {"budget": budget, "data_usage": data, "scenario": scenario}
+reco = recommend_plans(user, plans)
+
+for p in reco:
+    st.success(f"{p['name']} | {p['price']}원 | {p['data_gb']}GB")
