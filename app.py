@@ -9,45 +9,75 @@ from ai_advisor import ask_chatgpt
 
 st.set_page_config(page_title="Y-Mobile Saver", layout="wide")
 
+# ======================
+# Session State
+# ======================
+if "lang" not in st.session_state:
+    st.session_state.lang = "KO"
+if "translated" not in st.session_state:
+    st.session_state.translated = {}
+
+# ======================
+# Sidebar
+# ======================
 st.sidebar.title(TEXT["sidebar_title"])
 
 openai_key = st.sidebar.text_input(TEXT["openai_key"], type="password")
 deepl_key = st.sidebar.text_input(TEXT["deepl_key"], type="password")
 public_key = st.sidebar.text_input(TEXT["public_key"], type="password")
 
-lang = st.sidebar.selectbox(TEXT["language"], ["한국어", "English"])
-TARGET_LANG = "EN" if lang == "English" else "KO"
+lang_label = st.sidebar.selectbox(TEXT["language"], ["한국어", "English"])
+TARGET_LANG = "EN" if lang_label == "English" else "KO"
 
-def t(text):
-    return translate(text, TARGET_LANG, deepl_key)
+# 언어 바뀔 때만 번역 캐시 초기화
+if TARGET_LANG != st.session_state.lang:
+    st.session_state.lang = TARGET_LANG
+    st.session_state.translated = {}
 
-st.title(t(TEXT["title"]))
-st.subheader(t(TEXT["subtitle"]))
+def t(key):
+    if TARGET_LANG == "KO":
+        return TEXT[key]
+    if key in st.session_state.translated:
+        return st.session_state.translated[key]
+    translated = translate(TEXT[key], "EN", deepl_key)
+    st.session_state.translated[key] = translated
+    return translated
 
-budget = st.number_input(t(TEXT["budget"]), min_value=10000, step=5000)
-data_usage = st.number_input(t(TEXT["data"]), min_value=1)
+scenario = st.sidebar.radio(
+    t("scenario_title"),
+    [
+        t("scenario_foreign"),
+        t("scenario_device"),
+        t("scenario_independent")
+    ]
+)
 
-device_type = "unlocked"
+# ======================
+# Main UI
+# ======================
+st.title(t("title"))
+st.subheader(t("subtitle"))
 
-if st.button(t(TEXT["start"])) and openai_key and public_key:
-    try:
-        with st.spinner("공공데이터 요금제 불러오는 중..."):
-            plans = fetch_mobile_plans(public_key)
-    except RuntimeError as e:
-        st.error(str(e))
-        st.stop()
+budget = st.number_input(t("budget"), min_value=10000, step=5000)
+data_usage = st.number_input(t("data"), min_value=1)
+
+# ======================
+# Run Recommendation
+# ======================
+if st.button(t("start")) and openai_key:
+    plans = fetch_mobile_plans(public_key)
 
     user = {
         "budget": budget,
         "data_usage": data_usage,
-        "device_type": device_type
+        "scenario": scenario
     }
 
     recommended = recommend_plans(user, plans)
 
     st.markdown("### ✅ 추천 요금제")
     for p in recommended:
-        st.success(f"{p['name']} | {p['price']}원 | {round(p['data_gb'],1)}GB")
+        st.success(f"{p['name']} | {p['price']}원 | {p['data_gb']}GB")
 
     answer = ask_chatgpt(recommended, user, openai_key, TARGET_LANG)
     answer = translate(answer, TARGET_LANG, deepl_key)
