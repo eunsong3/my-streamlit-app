@@ -1,5 +1,4 @@
 import streamlit as st
-from i18n import TEXT
 from translator import translate
 from ai_advisor import chat_with_ai
 from data_calculator import calculate_monthly_data
@@ -24,12 +23,20 @@ if "page" not in st.session_state:
 # =====================
 # Sidebar
 # =====================
-st.sidebar.title("⚙️ 설정")
+st.sidebar.title("⚙️ Settings" if st.session_state.lang == "EN" else "⚙️ 설정")
 
-deepl_key = st.sidebar.text_input("DeepL API Key", type="password")
-openai_key = st.sidebar.text_input("ChatGPT API Key", type="password")
+deepl_key = st.sidebar.text_input(
+    "DeepL API Key", type="password"
+)
 
-lang = st.sidebar.selectbox("언어 선택", ["한국어", "English"])
+openai_key = st.sidebar.text_input(
+    "ChatGPT API Key", type="password"
+)
+
+lang = st.sidebar.selectbox(
+    "Language" if st.session_state.lang == "EN" else "언어 선택",
+    ["한국어", "English"]
+)
 st.session_state.lang = "EN" if lang == "English" else "KO"
 
 def t(text):
@@ -41,16 +48,34 @@ def t(text):
     st.session_state.translated[text] = translated
     return translated
 
-if st.sidebar.button("📊 평균 데이터 사용량 계산기"):
+if st.sidebar.button(
+    "📊 Average Data Calculator" if st.session_state.lang == "EN"
+    else "📊 평균 데이터 사용량 계산기"
+):
     st.session_state.page = "calculator"
 
-scenario = st.sidebar.radio(
-    "👤 사용자 시나리오",
-    ["외국인 유학생", "경제적 자립 준비 학생", "기기 교체 희망 학생"]
+scenario_labels = {
+    "외국인 유학생": "International Student",
+    "경제적 자립 준비 학생": "Financially Independent Student",
+    "기기 교체 희망 학생": "Device Upgrade Student"
+}
+
+scenario_reverse = {v: k for k, v in scenario_labels.items()}
+
+scenario_display = st.sidebar.radio(
+    "👤 User Scenario" if st.session_state.lang == "EN" else "👤 사용자 시나리오",
+    list(scenario_labels.values()) if st.session_state.lang == "EN"
+    else list(scenario_labels.keys())
+)
+
+scenario = (
+    scenario_reverse[scenario_display]
+    if st.session_state.lang == "EN"
+    else scenario_display
 )
 
 # =====================
-# 데이터 계산기
+# Data Calculator
 # =====================
 if st.session_state.page == "calculator":
     st.title(t("내 평균 데이터 사용량은?"))
@@ -75,20 +100,73 @@ if st.session_state.page == "calculator":
     st.stop()
 
 # =====================
-# 기기 교체 희망 학생
+# Device Upgrade Scenario
 # =====================
 if scenario == "기기 교체 희망 학생":
     st.title(t("📱 기기 교체 요금제 추천"))
 
-    maker = st.selectbox(t("제조사"), ["애플", "삼성"])
+    maker_map = {
+        "애플": "Apple",
+        "삼성": "Samsung"
+    }
+    maker_reverse = {v: k for k, v in maker_map.items()}
 
-    model = st.selectbox(
-        t("휴대폰 기종"),
-        ["아이폰 17 (256GB)"] if maker == "애플"
+    maker_display = st.selectbox(
+        t("제조사"),
+        list(maker_map.values()) if st.session_state.lang == "EN"
+        else list(maker_map.keys())
+    )
+
+    maker = (
+        maker_reverse[maker_display]
+        if st.session_state.lang == "EN"
+        else maker_display
+    )
+
+    model_map = {
+        "아이폰 17 (256GB)": "iPhone 17 (256GB)",
+        "갤럭시 S25": "Galaxy S25",
+        "갤럭시 Z 플립7 (256GB)": "Galaxy Z Flip 7 (256GB)"
+    }
+    model_reverse = {v: k for k, v in model_map.items()}
+
+    models = (
+        ["아이폰 17 (256GB)"]
+        if maker == "애플"
         else ["갤럭시 S25", "갤럭시 Z 플립7 (256GB)"]
     )
 
-    price = st.selectbox(t("요금 수준 선택"), ["~4만원", "~5만원", "~6만원"])
+    model_display = st.selectbox(
+        t("휴대폰 기종"),
+        [model_map[m] for m in models]
+        if st.session_state.lang == "EN"
+        else models
+    )
+
+    model = (
+        model_reverse[model_display]
+        if st.session_state.lang == "EN"
+        else model_display
+    )
+
+    price_map = {
+        "~4만원": "Under ₩40,000",
+        "~5만원": "Under ₩50,000",
+        "~6만원": "Under ₩60,000"
+    }
+    price_reverse = {v: k for k, v in price_map.items()}
+
+    price_display = st.selectbox(
+        t("요금 수준 선택"),
+        list(price_map.values()) if st.session_state.lang == "EN"
+        else list(price_map.keys())
+    )
+
+    price = (
+        price_reverse[price_display]
+        if st.session_state.lang == "EN"
+        else price_display
+    )
 
     st.divider()
     st.subheader(t("추천 결과"))
@@ -97,20 +175,20 @@ if scenario == "기기 교체 희망 학생":
 
     if key in DEVICE_PLANS:
         for name, fee, discount, support in DEVICE_PLANS[key]:
-            message = (
+            msg = (
                 f"{name}\n"
-                f"- 요금제 및 월정액: 월 {fee:,}원\n"
-                f"- 선택약정할인 (2년): {discount:,}원\n"
-                f"- 공통지원금 (기기변경): {support:,}원"
+                f"- Monthly fee: ₩{fee:,}\n"
+                f"- Contract discount (2 years): ₩{discount:,}\n"
+                f"- Device change subsidy: ₩{support:,}"
             )
-            st.success(t(message))
+            st.success(t(msg))
     else:
         st.warning(t("선택한 조건에 대한 요금제가 없습니다."))
 
     st.stop()
 
 # =====================
-# 알뜰폰 요금제 (외국인 / 경제적 자립)
+# MVNO Scenarios
 # =====================
 st.title(t("📱 알뜰폰 요금제 AI 추천"))
 
@@ -137,10 +215,10 @@ if st.button(t("💬 상담 시작하기")) and openai_key:
         {
             "role": "user",
             "content": (
-                f"나는 {scenario}이야.\n"
-                f"월 예산은 {budget}원이고,\n"
-                f"월 데이터 사용량은 {data}GB야.\n"
-                f"알뜰폰 요금제를 추천해줘."
+                f"I am a {scenario}.\n"
+                f"My monthly budget is {budget} KRW.\n"
+                f"My monthly data usage is {data} GB.\n"
+                f"Please recommend an MVNO plan."
             )
         }
     ]
@@ -148,7 +226,7 @@ if st.button(t("💬 상담 시작하기")) and openai_key:
     st.subheader(t("📌 추천 알뜰폰 요금제"))
     for p in recommended:
         st.success(
-            t(f"{p['name']} | 월 {p['price']}원 | {p['data_gb']}GB")
+            t(f"{p['name']} | ₩{p['price']} | {p['data_gb']}GB")
         )
 
 # =====================
@@ -160,7 +238,11 @@ for msg in st.session_state.chat:
             translate(msg["content"], st.session_state.lang, deepl_key)
         )
 
-if prompt := st.chat_input(t("궁금한 점을 자유롭게 물어보세요")):
+if prompt := st.chat_input(
+    "Ask anything about mobile plans"
+    if st.session_state.lang == "EN"
+    else "궁금한 점을 자유롭게 물어보세요"
+):
     st.session_state.chat.append({"role": "user", "content": prompt})
 
     answer = chat_with_ai(
