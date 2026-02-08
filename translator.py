@@ -8,10 +8,10 @@ def translate(text, target_lang, api_key):
     if not api_key or target_lang == "KO":
         return text
 
-    res = requests.post(
+    response = requests.post(
         DEEPL_URL,
         headers={"Authorization": f"DeepL-Auth-Key {api_key}"},
         data={"text": text, "target_lang": target_lang}
     )
-    res.raise_for_status()
-    return res.json()["translations"][0]["text"]
+    response.raise_for_status()
+    return response.json()["translations"][0]["text"]
