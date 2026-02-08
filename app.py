@@ -9,9 +9,7 @@ from ai_advisor import ask_chatgpt
 
 st.set_page_config(page_title="Y-Mobile Saver", layout="wide")
 
-# ======================
 # Sidebar
-# ======================
 st.sidebar.title(TEXT["sidebar_title"])
 
 openai_key = st.sidebar.text_input(TEXT["openai_key"], type="password")
@@ -21,12 +19,10 @@ public_key = st.sidebar.text_input(TEXT["public_key"], type="password")
 lang = st.sidebar.selectbox(TEXT["language"], ["한국어", "English"])
 TARGET_LANG = "EN" if lang == "English" else "KO"
 
-# ======================
-# Main UI
-# ======================
 def t(text):
     return translate(text, TARGET_LANG, deepl_key)
 
+# Main UI
 st.title(t(TEXT["title"]))
 st.subheader(t(TEXT["subtitle"]))
 
@@ -44,12 +40,14 @@ device_type = st.selectbox(
     format_func=lambda x: DEVICE_OPTIONS[x]
 )
 
-# ======================
-# Run Recommendation
-# ======================
+# Run
 if st.button(t(TEXT["start"])) and openai_key and public_key:
-    with st.spinner("요금제 데이터를 불러오는 중..."):
-        plans = fetch_mobile_plans(public_key)
+    try:
+        with st.spinner("공공데이터 요금제 불러오는 중..."):
+            plans = fetch_mobile_plans(public_key)
+    except RuntimeError:
+        st.error("❌ 공공데이터 서버에 연결할 수 없습니다.")
+        st.stop()
 
     user = {
         "budget": budget,
