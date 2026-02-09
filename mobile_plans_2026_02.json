@@ -1,0 +1,18 @@
+{
+  "updated_at": "2026-02",
+  "disclaimer": "본 요금제 정보는 2026년 2월 기준으로 조사된 자료이며 실제 가입 시 통신사에서 최신 조건을 확인하세요.",
+  "plans": [
+    { "carrier": "SKT", "type": "major", "name": "5G 컴팩트", "monthly_fee": 39000, "data_gb": 10, "voice": "무제한", "sms": "무제한", "tags": ["저가", "기기변경"] },
+    { "carrier": "SKT", "type": "major", "name": "5G 컴팩트플러스", "monthly_fee": 45000, "data_gb": 30, "voice": "무제한", "sms": "무제한", "tags": ["중가"] },
+    { "carrier": "KT", "type": "major", "name": "5G 슬림 4GB", "monthly_fee": 37000, "data_gb": 4, "voice": "무제한", "sms": "무제한", "tags": ["저가"] },
+    { "carrier": "KT", "type": "major", "name": "5G 슬림 21GB", "monthly_fee": 58000, "data_gb": 21, "voice": "무제한", "sms": "무제한", "tags": ["고가"] },
+    { "carrier": "LG U+", "type": "major", "name": "5G 미니", "monthly_fee": 37000, "data_gb": 6, "voice": "무제한", "sms": "무제한", "tags": ["저가"] },
+    { "carrier": "LG U+", "type": "major", "name": "5G 베이직+", "monthly_fee": 59000, "data_gb": 24, "voice": "무제한", "sms": "무제한", "tags": ["고가"] },
+    { "carrier": "우체국 알뜰폰", "type": "mvno", "name": "LTE 15GB", "monthly_fee": 29900, "data_gb": 15, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰", "가성비"] },
+    { "carrier": "우체국 알뜰폰", "type": "mvno", "name": "LTE 30GB", "monthly_fee": 33000, "data_gb": 30, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰"] },
+    { "carrier": "헬로모바일", "type": "mvno", "name": "LTE 데이터 10GB", "monthly_fee": 22000, "data_gb": 10, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰", "저가"] },
+    { "carrier": "헬로모바일", "type": "mvno", "name": "LTE 데이터 20GB", "monthly_fee": 29000, "data_gb": 20, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰"] },
+    { "carrier": "U+ 알뜰모바일", "type": "mvno", "name": "LTE 실속 7GB", "monthly_fee": 19900, "data_gb": 7, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰", "초저가"] },
+    { "carrier": "U+ 알뜰모바일", "type": "mvno", "name": "LTE 실속 15GB", "monthly_fee": 25900, "data_gb": 15, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰", "가성비"] }
+  ]
+}
