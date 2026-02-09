@@ -1,22 +1,17 @@
-# ai_advisor.py
-
 from openai import OpenAI
 
 def chat_with_ai(messages, api_key, lang):
     client = OpenAI(api_key=api_key)
 
     system = (
-        "You are a friendly mobile plan counselor for students. "
-        "Explain difficult terms in simple language."
+        "You are a mobile plan counselor. Use only provided plan data."
         if lang == "EN"
         else
-        "너는 대학 신입생을 돕는 친절한 통신 요금제 상담사야. "
-        "모르는 용어가 나오면 쉽게 풀어서 설명해줘."
+        "너는 통신 요금제 상담사이며 제공된 요금제 데이터 안에서만 추천한다."
     )
 
-    response = client.chat.completions.create(
+    res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "system", "content": system}] + messages
     )
-
-    return response.choices[0].message.content
+    return res.choices[0].message.content
