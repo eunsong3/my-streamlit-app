@@ -4,99 +4,99 @@
   "plans": [
     {
       "carrier": "SKT",
-      "name": "5GX 레귤러",
-      "price": 69000,
-      "data": "110GB (소진 시 5Mbps)",
-      "call_text": "무제한",
+      "name": "5GX 플래티넘",
+      "price": 125000,
+      "data": "무제한",
+      "benefits": "우주패스 all/life 무료, 웨이브(Wavve) 무료, 플로(FLO) 무료, 스마트기기 2회선 무료",
       "type": "5G"
     },
     {
       "carrier": "SKT",
-      "name": "다이렉트5G 62",
-      "price": 62000,
-      "data": "데이터 완전 무제한",
-      "call_text": "무제한",
-      "type": "5G(온라인)"
-    },
-    {
-      "carrier": "KT",
-      "name": "5G 심플 110GB",
+      "name": "5GX 레귤러",
       "price": 69000,
-      "data": "110GB (소진 시 5Mbps)",
-      "call_text": "무제한",
+      "data": "110GB",
+      "benefits": "우주패스 50% 할인, T멤버십 VIP 혜택(연 6회 영화 무료 등)",
       "type": "5G"
     },
     {
       "carrier": "KT",
-      "name": "요고 40",
+      "name": "초이스 프리미엄",
+      "price": 130000,
+      "data": "무제한",
+      "benefits": "OTT 선택 1(넷플릭스/디즈니+/티빙), VVIP 초이스(스타벅스/영화 무료 등), 멤버십 무제한",
+      "type": "5G"
+    },
+    {
+      "carrier": "KT",
+      "name": "요고 40 (온라인)",
       "price": 40000,
-      "data": "30GB (소진 시 1Mbps)",
-      "call_text": "무제한",
+      "data": "30GB",
+      "benefits": "지니뮤직/밀리의서재/블라이스 중 선택 1 무료, 멤버십 일반 혜택",
       "type": "5G(온라인)"
     },
     {
       "carrier": "LG U+",
-      "name": "5G 스탠다드",
-      "price": 75000,
-      "data": "150GB (소진 시 5Mbps)",
-      "call_text": "무제한",
+      "name": "5G 시그니처",
+      "price": 130000,
+      "data": "무제한",
+      "benefits": "디즈니+·넷플릭스 팩 선택, 유튜브 프리미엄 팩, 유독 VIP 4,000원 할인",
       "type": "5G"
     },
     {
       "carrier": "LG U+",
       "name": "너겟 5G 59",
       "price": 59000,
-      "data": "데이터 완전 무제한",
-      "call_text": "무제한",
+      "data": "무제한",
+      "benefits": "유독(구독) 서비스 할인권, 패밀리 결합 시 인당 최대 1.4만원 할인",
       "type": "5G(온라인)"
     },
     {
       "carrier": "U+유모바일",
-      "name": "LTE 유심(11GB+/통화기본)",
+      "name": "이마트24 요금제",
       "price": 33000,
-      "data": "11GB+매일2GB (소진 시 3Mbps)",
-      "call_text": "무제한",
+      "data": "11GB+일2GB",
+      "benefits": "이마트24 상품권 매월 1만원, 유튜브 프리미엄 3개월 이용권",
       "type": "LTE(알뜰폰)"
-    },
-    {
-      "carrier": "U+유모바일",
-      "name": "5G 유심(10GB/통화기본)",
-      "price": 12500,
-      "data": "10GB",
-      "call_text": "무제한",
-      "type": "5G(알뜰폰)"
     },
     {
       "carrier": "KB리브모바일",
       "name": "LTE 무제한 11GB+",
       "price": 26400,
-      "data": "11GB+매일2GB (소진 시 3Mbps)",
-      "call_text": "무제한",
+      "data": "11GB+일2GB",
+      "benefits": "KB금융쿠폰 연 최대 6만원, 편의점/커피/스타벅스 쿠폰 연 6회",
       "type": "LTE(알뜰폰)"
     },
     {
-      "carrier": "KB리브모바일",
-      "name": "5G 든든 10GB",
-      "price": 15000,
-      "data": "10GB (소진 시 1Mbps)",
-      "call_text": "무제한",
-      "type": "5G(알뜰폰)"
-    },
-    {
-      "carrier": "LG헬로모바일",
-      "name": "The 착한 데이터 유심 11GB",
-      "price": 32990,
-      "data": "11GB+매일2GB (소진 시 3Mbps)",
-      "call_text": "무제한",
+      "carrier": "프리티",
+      "name": "스타벅스 구독 요금제",
+      "price": 19800,
+      "data": "15GB+3Mbps",
+      "benefits": "스타벅스 아메리카노 기프티콘 매월 1매 증정",
       "type": "LTE(알뜰폰)"
     },
     {
-      "carrier": "LG헬로모바일",
-      "name": "5G 데이터 걱정없는 유심 20GB",
-      "price": 18330,
-      "data": "20GB (소진 시 1Mbps)",
-      "call_text": "무제한",
+      "carrier": "핀다이렉트",
+      "name": "Z Max 100GB+",
+      "price": 17000,
+      "data": "100GB+5Mbps",
+      "benefits": "7개월 한정 특가, 카카오 쇼핑 포인트 5,000P, 데이터 쉐어링 1회선 무료",
       "type": "5G(알뜰폰)"
+    },
+    {
+      "carrier": "모빙(Mobing)",
+      "name": "데이터 평생 7GB+",
+      "price": 10300,
+      "data": "7GB+1Mbps",
+      "benefits": "가격 변동 없는 평생 할인 요금, 소액결제 차단 서비스",
+      "type": "LTE(알뜰폰)"
+    },
+    {
+      "carrier": "토스모바일",
+      "name": "71GB+ 데이터 캐시백",
+      "price": 34800,
+      "data": "71GB+3Mbps",
+      "benefits": "미사용 데이터 최대 1만원 토스포인트 환급, 토스페이 결제 시 10% 적립",
+      "type": "LTE(알뜰폰)"
     }
   ]
 }
