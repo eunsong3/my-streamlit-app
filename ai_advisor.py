@@ -1,17 +1,17 @@
 from openai import OpenAI
 
-def chat_with_ai(messages, api_key, lang):
+def chat_with_ai(messages, api_key):
     client = OpenAI(api_key=api_key)
 
     system = (
-        "You are a mobile plan counselor. Only use provided plan data."
-        if lang == "EN"
-        else
-        "너는 통신 요금제 상담사이며 제공된 요금제 데이터 안에서만 추천한다."
+        "너는 통신 요금제 상담사다. "
+        "아래 제공된 요금제 데이터 범위 안에서만 추천하고 "
+        "존재하지 않는 요금제는 만들지 마라."
     )
 
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "system", "content": system}] + messages
     )
+
     return res.choices[0].message.content
