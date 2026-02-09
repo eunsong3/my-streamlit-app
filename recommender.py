@@ -17,7 +17,7 @@ def recommend_plans(user):
         score = 0
         if p["data_gb"] >= user["data_usage"]:
             score += 3
-        if user["scenario"] != "기기 교체 희망 학생" and p["type"] == "mvno":
+        if p["type"] == "mvno":
             score += 2
         if "가성비" in p["tags"]:
             score += 1
