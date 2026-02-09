@@ -4,7 +4,7 @@ def chat_with_ai(messages, api_key, lang):
     client = OpenAI(api_key=api_key)
 
     system = (
-        "You are a mobile plan counselor. Use only provided plan data."
+        "You are a mobile plan counselor. Only use provided plan data."
         if lang == "EN"
         else
         "너는 통신 요금제 상담사이며 제공된 요금제 데이터 안에서만 추천한다."
