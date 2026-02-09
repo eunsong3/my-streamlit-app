@@ -5,9 +5,19 @@ from ai_advisor import chat_with_ai
 
 st.set_page_config(page_title="Y-Mobile Saver", layout="wide")
 
+# =====================
+# Session State
+# =====================
 if "chat" not in st.session_state:
     st.session_state.chat = []
+if "chat_started" not in st.session_state:
+    st.session_state.chat_started = False
+if "recommended_plans" not in st.session_state:
+    st.session_state.recommended_plans = []
 
+# =====================
+# Sidebar
+# =====================
 st.sidebar.title("⚙️ 설정")
 openai_key = st.sidebar.text_input("ChatGPT API Key", type="password")
 
@@ -19,31 +29,22 @@ scenario = st.sidebar.radio(
 st.title("📱 Y-Mobile Saver")
 
 # =====================
-# 기기 교체 시나리오 (선택지 전부 유지)
+# 기기 교체 시나리오 (기존 유지)
 # =====================
 if scenario == "기기 교체 희망 학생":
     st.subheader("📱 기기 교체 요금제 추천")
 
-    maker = st.selectbox(
-        "제조사",
-        ["애플", "삼성"]
-    )
+    maker = st.selectbox("제조사", ["애플", "삼성"])
 
     if maker == "애플":
-        model = st.selectbox(
-            "기종",
-            ["아이폰 17 (256GB)"]
-        )
+        model = st.selectbox("기종", ["아이폰 17 (256GB)"])
     else:
         model = st.selectbox(
             "기종",
             ["갤럭시 S25", "갤럭시 Z 플립7 (256GB)"]
         )
 
-    price = st.selectbox(
-        "요금 수준",
-        ["~4만원", "~5만원", "~6만원"]
-    )
+    price = st.selectbox("요금 수준", ["~4만원", "~5만원", "~6만원"])
 
     key = (maker, model, price)
 
@@ -61,13 +62,28 @@ if scenario == "기기 교체 희망 학생":
     st.stop()
 
 # =====================
-# 전체 요금제(JSON) 기반 추천
+# JSON 기반 요금제 추천 (외국인 / 경제적 자립)
 # =====================
 st.subheader("📊 요금제 추천")
 
-budget = st.number_input("월 예산 (원)", 10000, 80000, 40000, step=5000)
-data = st.number_input("월 데이터 사용량 (GB)", 1, 200, 20)
+budget = st.number_input(
+    "월 예산 (원)",
+    min_value=10000,
+    max_value=80000,
+    value=40000,
+    step=5000
+)
 
+data = st.number_input(
+    "월 데이터 사용량 (GB)",
+    min_value=1,
+    max_value=200,
+    value=20
+)
+
+# =====================
+# 상담 시작
+# =====================
 if st.button("💬 상담 시작하기") and openai_key:
     user = {
         "budget": budget,
@@ -77,33 +93,79 @@ if st.button("💬 상담 시작하기") and openai_key:
 
     recommended = recommend_plans(user)
 
-    st.session_state.chat = [{
-        "role": "user",
-        "content": (
-            f"나는 {scenario}이야.\n"
-            f"월 예산은 {budget}원이고\n"
-            f"월 데이터 사용량은 {data}GB야.\n"
-            f"아래 요금제 중에서 추천해줘."
-        )
-    }]
+    # 🔑 추천 요금제 저장
+    st.session_state.recommended_plans = recommended
 
-    st.subheader("📌 추천 요금제")
-    for p in recommended:
+    # 🔑 대화 초기화 + 추천 요금제 포함
+    plan_summary = "\n".join([
+        f"- {p['carrier']} {p['name']} / {p['price']}원 / {p['data']}"
+        for p in recommended
+    ])
+
+    st.session_state.chat = [
+        {
+            "role": "system",
+            "content": (
+                "너는 통신 요금제 상담사다.\n"
+                "아래 추천된 요금제 정보를 기억하고,\n"
+                "사용자의 질문에 이 요금제들을 기준으로 답변하라.\n\n"
+                f"[추천 요금제 목록]\n{plan_summary}"
+            )
+        },
+        {
+            "role": "user",
+            "content": (
+                f"나는 {scenario}이야.\n"
+                f"월 예산은 {budget}원이고\n"
+                f"월 데이터 사용량은 {data}GB야.\n"
+                f"이 조건에 맞는 요금제를 추천해줘."
+            )
+        }
+    ]
+
+    st.session_state.chat_started = True
+
+# =====================
+# 항상 추천 요금제 표시 (채팅 중에도 유지)
+# =====================
+if st.session_state.recommended_plans:
+    st.subheader("📌 추천 요금제 (상담 중 유지)")
+    for p in st.session_state.recommended_plans:
         st.success(
             f"{p['carrier']} | {p['name']} | {p['price']}원\n"
             f"데이터: {p['data']} | 통화/문자: {p['call_text']}"
         )
 
-st.caption("⚠️ 요금제 정보는 예시 데이터이며 실제 가입 시 최신 조건을 확인하세요.")
+# =====================
+# Chat UI (이전 대화 유지)
+# =====================
+if st.session_state.chat_started:
+    for msg in st.session_state.chat:
+        if msg["role"] in ["user", "assistant"]:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
-for msg in st.session_state.chat:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    if prompt := st.chat_input("추천 요금제에 대해 궁금한 점을 물어보세요"):
+        st.session_state.chat.append(
+            {"role": "user", "content": prompt}
+        )
 
-if prompt := st.chat_input("궁금한 점을 물어보세요"):
-    st.session_state.chat.append({"role": "user", "content": prompt})
-    answer = chat_with_ai(st.session_state.chat, openai_key)
-    st.session_state.chat.append({"role": "assistant", "content": answer})
-    with st.chat_message("assistant"):
-        st.markdown(answer)
+        answer = chat_with_ai(
+            st.session_state.chat,
+            openai_key
+        )
 
+        st.session_state.chat.append(
+            {"role": "assistant", "content": answer}
+        )
+
+        with st.chat_message("assistant"):
+            st.markdown(answer)
+
+# =====================
+# Disclaimer
+# =====================
+st.caption(
+    "⚠️ 본 요금제 정보는 2026년 2월 기준이며 "
+    "실제 가입 시 통신사에서 최신 조건을 확인하세요."
+)
