@@ -19,16 +19,34 @@ scenario = st.sidebar.radio(
 st.title("📱 Y-Mobile Saver")
 
 # =====================
-# 기기 교체 시나리오 (기존 유지)
+# 기기 교체 시나리오 (선택지 전부 유지)
 # =====================
 if scenario == "기기 교체 희망 학생":
     st.subheader("📱 기기 교체 요금제 추천")
 
-    maker = st.selectbox("제조사", ["애플"])
-    model = st.selectbox("기종", ["아이폰 17 (256GB)"])
-    price = st.selectbox("요금 수준", ["~4만원"])
+    maker = st.selectbox(
+        "제조사",
+        ["애플", "삼성"]
+    )
+
+    if maker == "애플":
+        model = st.selectbox(
+            "기종",
+            ["아이폰 17 (256GB)"]
+        )
+    else:
+        model = st.selectbox(
+            "기종",
+            ["갤럭시 S25", "갤럭시 Z 플립7 (256GB)"]
+        )
+
+    price = st.selectbox(
+        "요금 수준",
+        ["~4만원", "~5만원", "~6만원"]
+    )
 
     key = (maker, model, price)
+
     if key in DEVICE_PLANS:
         for name, fee, discount, support in DEVICE_PLANS[key]:
             st.success(
@@ -37,6 +55,9 @@ if scenario == "기기 교체 희망 학생":
                 f"- 선택약정(2년): {discount}원\n"
                 f"- 기기변경 지원금: {support}원"
             )
+    else:
+        st.info("선택한 조건에 대한 요금제 정보가 준비되어 있지 않습니다.")
+
     st.stop()
 
 # =====================
@@ -85,3 +106,4 @@ if prompt := st.chat_input("궁금한 점을 물어보세요"):
     st.session_state.chat.append({"role": "assistant", "content": answer})
     with st.chat_message("assistant"):
         st.markdown(answer)
+
