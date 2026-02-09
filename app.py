@@ -19,17 +19,14 @@ scenario = st.sidebar.radio(
 st.title("📱 Y-Mobile Saver")
 
 # =====================
-# 기기 교체 시나리오 (기존 방식 유지)
+# 기기 교체 시나리오 (기존 유지)
 # =====================
 if scenario == "기기 교체 희망 학생":
     st.subheader("📱 기기 교체 요금제 추천")
 
-    maker = st.selectbox("제조사", ["애플", "삼성"])
-    model = st.selectbox(
-        "기종",
-        ["아이폰 17 (256GB)"] if maker == "애플" else ["갤럭시 S25"]
-    )
-    price = st.selectbox("요금 수준", ["~4만원", "~5만원"])
+    maker = st.selectbox("제조사", ["애플"])
+    model = st.selectbox("기종", ["아이폰 17 (256GB)"])
+    price = st.selectbox("요금 수준", ["~4만원"])
 
     key = (maker, model, price)
     if key in DEVICE_PLANS:
@@ -43,12 +40,12 @@ if scenario == "기기 교체 희망 학생":
     st.stop()
 
 # =====================
-# JSON 기반 추천 (두 시나리오만)
+# 전체 요금제(JSON) 기반 추천
 # =====================
-st.subheader("📊 알뜰폰 요금제 추천")
+st.subheader("📊 요금제 추천")
 
-budget = st.number_input("월 예산 (원)", 10000, 70000, 30000, step=5000)
-data = st.number_input("월 데이터 사용량 (GB)", 1, 100, 15)
+budget = st.number_input("월 예산 (원)", 10000, 80000, 40000, step=5000)
+data = st.number_input("월 데이터 사용량 (GB)", 1, 200, 20)
 
 if st.button("💬 상담 시작하기") and openai_key:
     user = {
@@ -56,25 +53,27 @@ if st.button("💬 상담 시작하기") and openai_key:
         "data_usage": data,
         "scenario": scenario
     }
+
     recommended = recommend_plans(user)
 
     st.session_state.chat = [{
         "role": "user",
-        "content": f"""
-나는 {scenario}이야.
-월 예산은 {budget}원이고
-월 데이터 사용량은 {data}GB야.
-이 조건에 맞는 알뜰폰 요금제를 추천해줘.
-"""
+        "content": (
+            f"나는 {scenario}이야.\n"
+            f"월 예산은 {budget}원이고\n"
+            f"월 데이터 사용량은 {data}GB야.\n"
+            f"아래 요금제 중에서 추천해줘."
+        )
     }]
 
     st.subheader("📌 추천 요금제")
     for p in recommended:
         st.success(
-            f"{p['carrier']} | {p['name']} | {p['monthly_fee']}원 | {p['data_gb']}GB"
+            f"{p['carrier']} | {p['name']} | {p['price']}원\n"
+            f"데이터: {p['data']} | 통화/문자: {p['call_text']}"
         )
 
-st.caption("⚠️ 본 요금제 정보는 2026년 2월 기준이며 실제 가입 시 최신 정보를 확인하세요.")
+st.caption("⚠️ 요금제 정보는 예시 데이터이며 실제 가입 시 최신 조건을 확인하세요.")
 
 for msg in st.session_state.chat:
     with st.chat_message(msg["role"]):
@@ -82,7 +81,7 @@ for msg in st.session_state.chat:
 
 if prompt := st.chat_input("궁금한 점을 물어보세요"):
     st.session_state.chat.append({"role": "user", "content": prompt})
-    answer = chat_with_ai(st.session_state.chat, openai_key, "KO")
+    answer = chat_with_ai(st.session_state.chat, openai_key)
     st.session_state.chat.append({"role": "assistant", "content": answer})
     with st.chat_message("assistant"):
         st.markdown(answer)
