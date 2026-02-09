@@ -69,7 +69,7 @@ st.subheader("📊 요금제 추천")
 budget = st.number_input(
     "월 예산 (원)",
     min_value=10000,
-    max_value=80000,
+    max_value=150000,
     value=40000,
     step=5000
 )
@@ -77,7 +77,7 @@ budget = st.number_input(
 data = st.number_input(
     "월 데이터 사용량 (GB)",
     min_value=1,
-    max_value=200,
+    max_value=500,
     value=20
 )
 
@@ -93,12 +93,12 @@ if st.button("💬 상담 시작하기") and openai_key:
 
     recommended = recommend_plans(user)
 
-    # 🔑 추천 요금제 저장
+    # 추천 요금제 저장
     st.session_state.recommended_plans = recommended
 
-    # 🔑 대화 초기화 + 추천 요금제 포함
+    # AI가 기억하도록 요약 생성
     plan_summary = "\n".join([
-        f"- {p['carrier']} {p['name']} / {p['price']}원 / {p['data']}"
+        f"- {p['carrier']} {p['name']} / {p['price']}원 / 데이터 {p['data']} / 혜택: {p['benefits']}"
         for p in recommended
     ])
 
@@ -106,7 +106,7 @@ if st.button("💬 상담 시작하기") and openai_key:
         {
             "role": "system",
             "content": (
-                "너는 통신 요금제 상담사다.\n"
+                "너는 통신 요금제 전문 상담사다.\n"
                 "아래 추천된 요금제 정보를 기억하고,\n"
                 "사용자의 질문에 이 요금제들을 기준으로 답변하라.\n\n"
                 f"[추천 요금제 목록]\n{plan_summary}"
@@ -126,18 +126,19 @@ if st.button("💬 상담 시작하기") and openai_key:
     st.session_state.chat_started = True
 
 # =====================
-# 항상 추천 요금제 표시 (채팅 중에도 유지)
+# 추천 요금제 항상 표시 (채팅 중에도 유지)
 # =====================
 if st.session_state.recommended_plans:
     st.subheader("📌 추천 요금제 (상담 중 유지)")
     for p in st.session_state.recommended_plans:
         st.success(
             f"{p['carrier']} | {p['name']} | {p['price']}원\n"
-            f"데이터: {p['data']} | 통화/문자: {p['call_text']}"
+            f"데이터: {p['data']}\n"
+            f"혜택: {p['benefits']}"
         )
 
 # =====================
-# Chat UI (이전 대화 유지)
+# Chat UI (연속 대화)
 # =====================
 if st.session_state.chat_started:
     for msg in st.session_state.chat:
