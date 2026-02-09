@@ -1,25 +1,34 @@
 import json
+import re
 
-DATA_PATH = "mobile_plans_2026_02.json"
+DATA_PATH = "mobile_plans.json"
+
+def parse_data_amount(data_str):
+    if "무제한" in data_str:
+        return 999
+    match = re.search(r"(\\d+)GB", data_str)
+    return int(match.group(1)) if match else 0
 
 def load_plans():
     with open(DATA_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)["plans"]
+        return json.load(f)
 
 def recommend_plans(user):
     plans = load_plans()
     scored = []
 
     for p in plans:
-        if p["monthly_fee"] > user["budget"]:
+        if p["price"] > user["budget"]:
             continue
 
+        data_gb = parse_data_amount(p["data"])
         score = 0
-        if p["data_gb"] >= user["data_usage"]:
+
+        if data_gb >= user["data_usage"]:
             score += 3
-        if p["type"] == "mvno":
-            score += 2
-        if "가성비" in p["tags"]:
+        if "알뜰폰" in p["type"]:
+            score += 1
+        if "온라인" in p["type"]:
             score += 1
 
         scored.append((score, p))
