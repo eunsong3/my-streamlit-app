@@ -1,21 +1,26 @@
-# recommender.py
+import json
 
-def recommend_plans(user, plans):
+DATA_PATH = "mobile_plans_2026_02.json"
+
+def load_plans():
+    with open(DATA_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)["plans"]
+
+def recommend_plans(user):
+    plans = load_plans()
     scored = []
 
     for p in plans:
-        score = 0
-        if p["price"] <= user["budget"]:
-            score += 5
-        if p["data_gb"] >= user["data_usage"]:
-            score += 5
+        if p["monthly_fee"] > user["budget"]:
+            continue
 
-        if user["scenario"] == "외국인 유학생" and p["price"] < 35000:
-            score += 2
-        if user["scenario"] == "경제적 자립 준비 학생" and p["price"] < 30000:
+        score = 0
+        if p["data_gb"] >= user["data_usage"]:
             score += 3
-        if user["scenario"] == "기기 교체 희망 학생" and p["data_gb"] >= 30:
+        if user["scenario"] != "기기 교체 희망 학생" and p["type"] == "mvno":
             score += 2
+        if "가성비" in p["tags"]:
+            score += 1
 
         scored.append((score, p))
 
