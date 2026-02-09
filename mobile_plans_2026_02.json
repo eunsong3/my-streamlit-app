@@ -2,17 +2,101 @@
   "updated_at": "2026-02",
   "disclaimer": "본 요금제 정보는 2026년 2월 기준으로 조사된 자료이며 실제 가입 시 통신사에서 최신 조건을 확인하세요.",
   "plans": [
-    { "carrier": "SKT", "type": "major", "name": "5G 컴팩트", "monthly_fee": 39000, "data_gb": 10, "voice": "무제한", "sms": "무제한", "tags": ["저가", "기기변경"] },
-    { "carrier": "SKT", "type": "major", "name": "5G 컴팩트플러스", "monthly_fee": 45000, "data_gb": 30, "voice": "무제한", "sms": "무제한", "tags": ["중가"] },
-    { "carrier": "KT", "type": "major", "name": "5G 슬림 4GB", "monthly_fee": 37000, "data_gb": 4, "voice": "무제한", "sms": "무제한", "tags": ["저가"] },
-    { "carrier": "KT", "type": "major", "name": "5G 슬림 21GB", "monthly_fee": 58000, "data_gb": 21, "voice": "무제한", "sms": "무제한", "tags": ["고가"] },
-    { "carrier": "LG U+", "type": "major", "name": "5G 미니", "monthly_fee": 37000, "data_gb": 6, "voice": "무제한", "sms": "무제한", "tags": ["저가"] },
-    { "carrier": "LG U+", "type": "major", "name": "5G 베이직+", "monthly_fee": 59000, "data_gb": 24, "voice": "무제한", "sms": "무제한", "tags": ["고가"] },
-    { "carrier": "우체국 알뜰폰", "type": "mvno", "name": "LTE 15GB", "monthly_fee": 29900, "data_gb": 15, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰", "가성비"] },
-    { "carrier": "우체국 알뜰폰", "type": "mvno", "name": "LTE 30GB", "monthly_fee": 33000, "data_gb": 30, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰"] },
-    { "carrier": "헬로모바일", "type": "mvno", "name": "LTE 데이터 10GB", "monthly_fee": 22000, "data_gb": 10, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰", "저가"] },
-    { "carrier": "헬로모바일", "type": "mvno", "name": "LTE 데이터 20GB", "monthly_fee": 29000, "data_gb": 20, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰"] },
-    { "carrier": "U+ 알뜰모바일", "type": "mvno", "name": "LTE 실속 7GB", "monthly_fee": 19900, "data_gb": 7, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰", "초저가"] },
-    { "carrier": "U+ 알뜰모바일", "type": "mvno", "name": "LTE 실속 15GB", "monthly_fee": 25900, "data_gb": 15, "voice": "무제한", "sms": "무제한", "tags": ["알뜰폰", "가성비"] }
+    {
+      "carrier": "SKT",
+      "name": "5GX 레귤러",
+      "price": 69000,
+      "data": "110GB (소진 시 5Mbps)",
+      "call_text": "무제한",
+      "type": "5G"
+    },
+    {
+      "carrier": "SKT",
+      "name": "다이렉트5G 62",
+      "price": 62000,
+      "data": "데이터 완전 무제한",
+      "call_text": "무제한",
+      "type": "5G(온라인)"
+    },
+    {
+      "carrier": "KT",
+      "name": "5G 심플 110GB",
+      "price": 69000,
+      "data": "110GB (소진 시 5Mbps)",
+      "call_text": "무제한",
+      "type": "5G"
+    },
+    {
+      "carrier": "KT",
+      "name": "요고 40",
+      "price": 40000,
+      "data": "30GB (소진 시 1Mbps)",
+      "call_text": "무제한",
+      "type": "5G(온라인)"
+    },
+    {
+      "carrier": "LG U+",
+      "name": "5G 스탠다드",
+      "price": 75000,
+      "data": "150GB (소진 시 5Mbps)",
+      "call_text": "무제한",
+      "type": "5G"
+    },
+    {
+      "carrier": "LG U+",
+      "name": "너겟 5G 59",
+      "price": 59000,
+      "data": "데이터 완전 무제한",
+      "call_text": "무제한",
+      "type": "5G(온라인)"
+    },
+    {
+      "carrier": "U+유모바일",
+      "name": "LTE 유심(11GB+/통화기본)",
+      "price": 33000,
+      "data": "11GB+매일2GB (소진 시 3Mbps)",
+      "call_text": "무제한",
+      "type": "LTE(알뜰폰)"
+    },
+    {
+      "carrier": "U+유모바일",
+      "name": "5G 유심(10GB/통화기본)",
+      "price": 12500,
+      "data": "10GB",
+      "call_text": "무제한",
+      "type": "5G(알뜰폰)"
+    },
+    {
+      "carrier": "KB리브모바일",
+      "name": "LTE 무제한 11GB+",
+      "price": 26400,
+      "data": "11GB+매일2GB (소진 시 3Mbps)",
+      "call_text": "무제한",
+      "type": "LTE(알뜰폰)"
+    },
+    {
+      "carrier": "KB리브모바일",
+      "name": "5G 든든 10GB",
+      "price": 15000,
+      "data": "10GB (소진 시 1Mbps)",
+      "call_text": "무제한",
+      "type": "5G(알뜰폰)"
+    },
+    {
+      "carrier": "LG헬로모바일",
+      "name": "The 착한 데이터 유심 11GB",
+      "price": 32990,
+      "data": "11GB+매일2GB (소진 시 3Mbps)",
+      "call_text": "무제한",
+      "type": "LTE(알뜰폰)"
+    },
+    {
+      "carrier": "LG헬로모바일",
+      "name": "5G 데이터 걱정없는 유심 20GB",
+      "price": 18330,
+      "data": "20GB (소진 시 1Mbps)",
+      "call_text": "무제한",
+      "type": "5G(알뜰폰)"
+    }
   ]
 }
